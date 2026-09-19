@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getTeamSession } from "@/lib/auth";
 import { renderMarkdownToSafeHTML } from "@/lib/markdown";
 import { Panel } from "@/components/ui/Panel";
+import { PrintButton } from "@/components/ui/PrintButton";
 import { CaseDownloadSection } from "@/components/case/CaseDownloadSection";
 import { CheckpointsSection } from "@/components/case/CheckpointsSection";
 import { mockDB } from "@/lib/supabase-server";
@@ -40,14 +41,7 @@ export default async function CasePage() {
         </div>
 
         <div className="flex items-center gap-3 no-print">
-          <button
-            onClick={() => {
-              if (typeof window !== "undefined") window.print();
-            }}
-            className="px-3 py-1.5 bg-cream text-ink border-2 border-ink rounded font-mono text-xs font-bold uppercase shadow-hard-sm hover:shadow-hard active:translate-y-0.5"
-          >
-            PRINT VERSION
-          </button>
+          <PrintButton />
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { mockDB } from "@/lib/supabase-server";
 import { eventConfig } from "@/config/event.config";
 import { generateQRSVGString } from "@/lib/qr-svg";
 import { env } from "@/lib/env";
+import { PrintButton } from "@/components/ui/PrintButton";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +24,11 @@ export default async function PrintTeamCardsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            if (typeof window !== "undefined") window.print();
-          }}
+        <PrintButton
           className="px-5 py-2.5 bg-crimson text-paper border-2 border-ink rounded font-mono text-xs font-black uppercase shadow-hard hover:shadow-hard-lg"
         >
           PRINT ALL PASSES
-        </button>
+        </PrintButton>
       </div>
 
       {/* Grid of Team Cards */}
