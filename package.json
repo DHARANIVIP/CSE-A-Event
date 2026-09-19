@@ -1,0 +1,41 @@
+{
+  "name": "mystery-box",
+  "version": "1.0.0",
+  "description": "Mystery Box – The Digital Case Event Portal",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:api": "vitest run tests/api",
+    "test:concurrency": "vitest run tests/concurrency",
+    "check:secrets": "node scripts/check-bundle-secrets.mjs",
+    "hash:code": "node scripts/hash-code.mjs",
+    "hash:admin": "node scripts/hash-admin-password.mjs",
+    "seed:teams": "node scripts/seed-teams.mjs",
+    "load:test": "node scripts/load-test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "autoprefixer": "^10.6.1",
+    "jose": "^6.2.12",
+    "next": "^16.3.5",
+    "postcss": "^8.5.28",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwindcss": "^3.4.19",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.1"
+  }
+}
