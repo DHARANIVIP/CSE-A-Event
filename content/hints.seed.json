@@ -1,0 +1,23 @@
+[
+  {
+    "position": 1,
+    "title": "Deciphering the Firewall Dropped Packets",
+    "body": "When filtering `system_logs.txt`, focus only on lines containing 'DROP' and port '8080'. Look for MAC addresses following the IEEE 802 standard format (`XX:XX:XX:XX:XX:XX`). A simple `grep` or pandas query grouping by `src_mac` will immediately highlight the anomalous terminal.",
+    "release_at": null,
+    "released": true
+  },
+  {
+    "position": 2,
+    "title": "Cross-Referencing Physical vs Digital Access",
+    "body": "Remember that timestamps in `access_logs.csv` are recorded in 24-hour UTC format. If you see a badge entry that occurred without a corresponding terminal login within 5 minutes, that badge ID was cloned.",
+    "release_at": "2026-09-19T10:45:00.000Z",
+    "released": false
+  },
+  {
+    "position": 3,
+    "title": "Constructing the 5-Character Key",
+    "body": "Ensure all characters derived from Q1 through Q5 are uppercase alphanumeric characters. Do not include spaces, hyphens, or brackets when entering the code into the Mystery Box.",
+    "release_at": "2026-09-19T11:15:00.000Z",
+    "released": false
+  }
+]

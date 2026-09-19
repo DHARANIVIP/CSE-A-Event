@@ -1,0 +1,45 @@
+{
+  "derivationRule": "Each answer contributes exactly one character to the final 5-character code. Combine Q1 + Q2 + Q3 + Q4 + Q5 in order.",
+  "questions": [
+    {
+      "id": "q1",
+      "step": 1,
+      "title": "The Rogue MAC Address",
+      "fileHint": "system_logs.txt",
+      "text": "Inspect `system_logs.txt` between 02:10:00 and 02:18:00. Identify the source MAC address that triggered more than 40 dropped packet alerts on port 8080. Locate the final character of this MAC address (ignoring colons).",
+      "derivation": "The last hexadecimal character of the identified MAC address becomes character #1 of the code."
+    },
+    {
+      "id": "q2",
+      "step": 2,
+      "title": "The Compromised Terminal",
+      "fileHint": "devices.csv",
+      "text": "Filter `devices.csv` using the MAC address identified in Q1 to discover the host's assigned IP address and terminal name. Take the 3rd character of the terminal's hostname.",
+      "derivation": "The 3rd character of the hostname becomes character #2 of the code."
+    },
+    {
+      "id": "q3",
+      "step": 3,
+      "title": "Physical Badge Discrepancy",
+      "fileHint": "access_logs.csv",
+      "text": "Using the terminal's physical room location from Q2, examine `access_logs.csv` for any door unlock events between 01:50:00 and 02:20:00. Find the Badge ID used during the anomalous unlock. What is the first letter of the Badge ID?",
+      "derivation": "The first letter of the anomalous Badge ID becomes character #3 of the code."
+    },
+    {
+      "id": "q4",
+      "step": 4,
+      "title": "The Staged Payload",
+      "fileHint": "login_logs.csv",
+      "text": "Search `login_logs.csv` for the username tied to the Badge ID from Q3. Determine the destination directory where their terminal staged the exfiltration script. Identify the 4th character of the script name.",
+      "derivation": "The 4th character of the staged script name becomes character #4 of the code."
+    },
+    {
+      "id": "q5",
+      "step": 5,
+      "title": "Network Checksum Signature",
+      "fileHint": "network_traffic.csv",
+      "text": "Isolate the outgoing stream in `network_traffic.csv` matching the script transfer identified in Q4. Calculate the modulo-10 check digit of the byte packet payload count (or check the final character of the SHA256 record).",
+      "derivation": "The resulting single alphanumeric digit becomes character #5 of the code."
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#B30033" />
+  <!-- Brim -->
+  <path d="M8 44 C8 40, 20 38, 32 38 C44 38, 56 40, 56 44 C56 47, 44 49, 32 49 C20 49, 8 47, 8 44 Z" fill="#0B0B0B" />
+  <!-- Crown -->
+  <path d="M20 38 C19 28, 22 17, 28 16 C31 18, 33 18, 36 16 C42 17, 45 28, 44 38 Z" fill="#0B0B0B" />
+  <!-- Crimson Ribbon -->
+  <path d="M20 36 C23 37, 41 37, 44 36 L43.5 32 C41 33, 23 33, 20.5 32 Z" fill="#FFF4E0" />
+  <!-- Question mark pin on ribbon -->
+  <circle cx="32" cy="27" r="2" fill="#E0A526" />
+</svg>
