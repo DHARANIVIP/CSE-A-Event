@@ -22,7 +22,7 @@
   --shadow-hard: 6px 6px 0 var(--cyan-shadow);
   --shadow-hard-lg: 9px 9px 0 var(--cyan-shadow);
 
-  --content-max: 920px;
+  --content-max: 1280px;
 }
 
 /* Instant Pure-CSS Terracotta Running-Bond Brick Fallback (SSR & Before JS) */

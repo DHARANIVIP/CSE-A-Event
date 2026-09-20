@@ -190,10 +190,8 @@ function EnterForm() {
         )}
 
         <div className="mt-6 pt-4 border-t border-ink/20 text-center font-mono text-[11px] text-muted">
-          <span>Need your team badge or PIN? Visit the </span>
-          <a href="/help" className="text-crimson font-bold underline">
-            Help Desk
-          </a>
+          <span>Need your team badge or PIN? Approach the </span>
+          <span className="text-crimson font-bold">Front Organizer Desk</span>
           <span>.</span>
         </div>
       </Panel>

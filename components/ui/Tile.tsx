@@ -26,8 +26,8 @@ export const Tile: React.FC<TileProps> = ({
       href={href}
       className={`group relative flex flex-col items-center justify-center bg-cream border-2 border-ink rounded transition-all duration-120 select-none cursor-pointer focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-crimson ${
         isWide
-          ? "w-[218px] sm:w-[226px] h-[92px] sm:h-[104px] px-4"
-          : "w-[92px] sm:w-[104px] h-[92px] sm:h-[104px]"
+          ? "w-[240px] sm:w-[280px] h-[100px] sm:h-[116px] px-4"
+          : "w-[124px] sm:w-[140px] h-[100px] sm:h-[116px] px-2"
       } shadow-hard-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard active:translate-x-[3px] active:translate-y-[3px] active:shadow-none ${className}`}
     >
       {badge && (
@@ -40,7 +40,7 @@ export const Tile: React.FC<TileProps> = ({
         {icon}
       </div>
 
-      <span className="mt-1 font-mono text-[11px] sm:text-[12px] md:text-[13px] font-black uppercase text-crimson tracking-wider text-center leading-tight truncate max-w-full px-1">
+      <span className="mt-2 font-mono text-[11px] sm:text-xs font-black uppercase text-crimson tracking-wider text-center leading-tight whitespace-nowrap max-w-full px-1">
         {label}
       </span>
     </Link>
