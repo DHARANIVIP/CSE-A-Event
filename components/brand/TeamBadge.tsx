@@ -18,8 +18,9 @@ export const TeamBadge: React.FC<TeamBadgeProps> = ({
     return (
       <Link
         href="/enter"
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-cream border-2 border-ink rounded font-mono text-xs uppercase tracking-wider font-bold text-crimson shadow-hard-sm hover:-translate-y-0.5 hover:shadow-hard transition-all ${className}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-cream border-2 border-ink rounded-sm font-mono text-xs uppercase tracking-wider font-bold text-ink hover:text-crimson shadow-hard-sm hover:-translate-y-0.5 hover:shadow-hard transition-all ${className}`}
       >
+        <span className="text-brass">★</span>
         <span>ENTER AS TEAM</span>
       </Link>
     );

@@ -16,7 +16,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    "inline-flex items-center justify-center font-mono font-bold uppercase tracking-wider select-none transition-all duration-120 border-3 border-ink rounded focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-crimson";
+    "inline-flex items-center justify-center font-mono font-bold uppercase tracking-wider select-none transition-all duration-120 border-2 border-ink rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass";
 
   const sizeStyles = {
     sm: "px-3 py-1.5 text-xs",
@@ -26,11 +26,11 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary:
-      "bg-crimson text-paper shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-lg hover:bg-crimson-dark active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+      "bg-crimson text-paper shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-lg hover:bg-crimson-dark active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
     secondary:
-      "bg-cream text-crimson shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-lg active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+      "bg-cream text-ink shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-lg hover:bg-paper hover:text-crimson active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
     danger:
-      "bg-danger text-paper shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-lg active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+      "bg-danger text-paper shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-lg active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
   };
 
   const disabledStyles =

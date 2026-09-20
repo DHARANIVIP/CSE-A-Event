@@ -17,11 +17,11 @@ export const Logo: React.FC<LogoProps> = ({ className = "", isCompact = false })
         aria-label="Mystery Box Home"
       >
         <div className="relative">
-          <span className="font-display text-2xl tracking-tighter text-crimson font-black drop-shadow-[2px_2px_0px_#1EB0D8]">
+          <span className="font-display text-2xl tracking-tight text-crimson font-black drop-shadow-[2px_2px_0px_rgba(23,17,12,0.8)]">
             MYSTERY BOX
           </span>
-          <div className="absolute -top-3.5 -right-3 rotate-[-12deg] pointer-events-none group-hover:rotate-[-6deg] transition-transform">
-            <DetectiveHat size={26} />
+          <div className="absolute -top-3.5 -right-3.5 rotate-[-10deg] pointer-events-none group-hover:rotate-[-5deg] transition-transform">
+            <DetectiveHat size={28} />
           </div>
         </div>
       </Link>
@@ -30,15 +30,15 @@ export const Logo: React.FC<LogoProps> = ({ className = "", isCompact = false })
 
   return (
     <div className={`relative flex flex-col items-center select-none text-center ${className}`}>
-      {/* Title Lockup with Tilted Fedora on top of the last letter */}
+      {/* Title Lockup with Tilted Western Stetson on top of the last letter */}
       <div className="relative inline-block">
         <h1
           className="font-display font-black uppercase text-crimson tracking-tight leading-none"
           style={{
-            fontSize: "clamp(3.2rem, 11vw, 7.5rem)",
+            fontSize: "clamp(3.2rem, 11vw, 7.2rem)",
             textShadow:
-              "3px 3px 0 #0B0B0B, -2px -2px 0 #0B0B0B, 2px -2px 0 #0B0B0B, -2px 2px 0 #0B0B0B, 6px 6px 0px var(--cyan-shadow)",
-            WebkitTextStroke: "2px #0B0B0B",
+              "2px 2px 0 #150F0A, -1px -1px 0 #150F0A, 1px -1px 0 #150F0A, -1px 1px 0 #150F0A, 5px 5px 0px rgba(20, 14, 10, 0.75)",
+            WebkitTextStroke: "1.5px #150F0A",
           }}
         >
           <span className="hidden sm:inline">MYSTERY BOX</span>
@@ -46,21 +46,24 @@ export const Logo: React.FC<LogoProps> = ({ className = "", isCompact = false })
           <span className="sm:hidden block">BOX</span>
         </h1>
 
-        {/* Tilted Fedora (-12deg) placed on top-right corner of final letter */}
+        {/* Tilted Western Stetson (-10deg) placed on top-right corner of final letter */}
         <div
-          className="absolute -top-7 -right-5 sm:-top-11 sm:-right-8 rotate-[-12deg] pointer-events-none animate-bounce"
-          style={{ animationDuration: "3s" }}
+          className="absolute -top-8 -right-6 sm:-top-12 sm:-right-9 rotate-[-10deg] pointer-events-none transition-transform duration-300 hover:rotate-[-5deg]"
         >
-          <DetectiveHat size={72} className="w-14 sm:w-20 md:w-24" />
+          <DetectiveHat size={78} className="w-16 sm:w-22 md:w-26" />
         </div>
       </div>
 
-      {/* Pacifico Subtitle Signature */}
-      <div className="mt-3 sm:mt-4 font-script text-xl sm:text-2xl md:text-3xl text-ink">
-        <span>The Digital Case · by </span>
-        <span className="underline decoration-2 decoration-crimson underline-offset-4 font-semibold text-ink">
+      {/* Western Bureau Subtitle Ribbon */}
+      <div className="mt-3 sm:mt-4 flex items-center justify-center gap-2 font-mono text-xs sm:text-sm md:text-base text-ink font-bold tracking-wider uppercase">
+        <span className="text-brass">★</span>
+        <span className="text-ink">The Digital Case</span>
+        <span className="text-brass">·</span>
+        <span className="text-muted">By</span>
+        <span className="text-crimson underline decoration-2 decoration-brass underline-offset-4 font-black">
           {eventConfig.organizerTeam}
         </span>
+        <span className="text-brass">★</span>
       </div>
     </div>
   );
