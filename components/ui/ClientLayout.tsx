@@ -30,12 +30,12 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
       <Header bgPrefs={bgPrefs} />
 
       {/* Main Dynamic Viewport */}
-      <main id="main-content" className="flex-1 w-full max-w-content mx-auto px-4 py-6 sm:py-8 z-10">
+      <main id="main-content" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 z-10 flex flex-col">
         {children}
       </main>
 
       {/* Global Retro Monospace Footer */}
-      <footer className="w-full max-w-content mx-auto px-4 py-6 text-center select-none z-10 no-print">
+      <footer className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center select-none z-10 no-print">
         <div className="bg-paper/90 border-2 border-ink rounded px-4 py-3 shadow-hard-sm">
           <p className="font-mono text-xs sm:text-sm text-ink leading-relaxed">
             Built for{" "}
@@ -51,10 +51,6 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
             <span>·</span>
             <a href="/about" className="hover:text-crimson underline">
               ABOUT
-            </a>
-            <span>·</span>
-            <a href="/help" className="hover:text-crimson underline">
-              INVESTIGATOR HELP
             </a>
             <span>·</span>
             <a href="/admin/login" className="hover:text-crimson underline">

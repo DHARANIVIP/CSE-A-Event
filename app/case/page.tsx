@@ -6,7 +6,6 @@ import { getTeamSession } from "@/lib/auth";
 import { renderMarkdownToSafeHTML } from "@/lib/markdown";
 import { Panel } from "@/components/ui/Panel";
 import { PrintButton } from "@/components/ui/PrintButton";
-import { CaseDownloadSection } from "@/components/case/CaseDownloadSection";
 import { CheckpointsSection } from "@/components/case/CheckpointsSection";
 import { mockDB } from "@/lib/supabase-server";
 import { eventConfig } from "@/config/event.config";
@@ -53,18 +52,7 @@ export default async function CasePage() {
         />
       </Panel>
 
-      {/* 2. Download Archive Section (Client Component) */}
-      <Panel className="no-print">
-        <h2 className="font-display text-2xl uppercase text-crimson font-black tracking-tight mb-4">
-          FORENSIC EVIDENCE ARCHIVE
-        </h2>
-        <CaseDownloadSection
-          caseReleased={mockDB.eventState.case_released}
-          caseSha256={mockDB.eventState.case_sha256}
-        />
-      </Panel>
-
-      {/* 3. The 5 Chained Investigative Questions */}
+      {/* 2. The 5 Chained Investigative Questions */}
       <Panel as="section">
         <div className="border-b-2 border-ink/20 pb-3 mb-6">
           <h2 className="font-display text-2xl uppercase text-crimson font-black tracking-tight">
