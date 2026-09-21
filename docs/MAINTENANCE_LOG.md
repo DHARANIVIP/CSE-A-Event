@@ -23,3 +23,8 @@ This log tracks daily operational audits, automated test verifications, and comp
 - Verified atomic case submission locking mechanisms under simulated concurrency.
 - Race condition test suite passed with 100% deterministic lock acquisition.
 
+
+### Checkpoint 2026-09-21 #5 (14:20 IST)
+- Tested sliding-window rate limiters for team submissions and API endpoints.
+- Confirmed 429 response enforcement and IP rate limit reset headers.
+
