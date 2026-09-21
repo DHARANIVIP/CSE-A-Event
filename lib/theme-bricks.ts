@@ -1,24 +1,24 @@
-// Procedural Brick Wall Constants & Palette Tokens
-// Matches Section 6: Soft salmon/terracotta-peach running-bond brick wall
+// Procedural Frontier Background Constants & Palette Tokens
+// Dark weathered frontier saloon timber & aged tavern masonry
 
 export const BRICK_PALETTE = {
   baseColors: [
-    "#E7B29A",
-    "#E3A78B",
-    "#DFA084",
-    "#E9B8A1",
-    "#D99A7E",
-    "#EDBCA6",
+    "#261D17",
+    "#2D231C",
+    "#231B15",
+    "#31261F",
+    "#292019",
+    "#201813",
   ] as const,
-  mortar: "#B9573F",
-  mortarShadow: "#A24A35",
-  highlightEdge: "rgba(255, 255, 255, 0.28)",
-  shadowEdge: "rgba(90, 30, 20, 0.28)",
-  pitColor: "rgba(70, 20, 15, 0.35)",
+  mortar: "#15100C",
+  mortarShadow: "#0E0B08",
+  highlightEdge: "rgba(255, 235, 200, 0.08)",
+  shadowEdge: "rgba(10, 8, 6, 0.45)",
+  pitColor: "rgba(12, 9, 7, 0.45)",
   vignetteInner: "rgba(0, 0, 0, 0)",
-  vignetteOuter: "rgba(15, 5, 5, 0.26)",
-  gradientOverlayTop: "rgba(0, 0, 0, 0)",
-  gradientOverlayBottom: "rgba(0, 0, 0, 0.12)",
+  vignetteOuter: "rgba(8, 6, 4, 0.55)",
+  gradientOverlayTop: "rgba(0, 0, 0, 0.05)",
+  gradientOverlayBottom: "rgba(0, 0, 0, 0.35)",
 };
 
 export const BRICK_GEOMETRY = {

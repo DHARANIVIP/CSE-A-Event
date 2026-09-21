@@ -5,6 +5,7 @@ import { Header } from "./Header";
 import { OfflineBanner } from "./OfflineBanner";
 import { BrickBackground } from "../background/BrickBackground";
 import { RainBackground } from "../background/RainBackground";
+import { DustMotes } from "../background/DustMotes";
 import { useBackgroundPrefs } from "../background/useBackgroundPrefs";
 import { SkipLink } from "./SkipLink";
 import { eventConfig } from "@/config/event.config";
@@ -22,6 +23,9 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
         brightnessLevel={bgPrefs.brickBrightness}
         overlayOpacity={bgPrefs.overlayOpacity}
       />
+
+      {/* Realistic Frontier Dust Motes in Ambient Light */}
+      <DustMotes enabled={true} />
 
       {/* Interactive Rain Particle System Canvas */}
       <RainBackground enabled={bgPrefs.rainEnabled} />

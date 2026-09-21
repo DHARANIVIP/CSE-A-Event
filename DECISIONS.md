@@ -31,3 +31,8 @@ This document records all architectural, design, and engineering decisions made 
 ### Decision 7: Session Token Separation (Section 3 S7)
 - **Decision**: Dedicated cookie names (`mb_team_token` and `mb_admin_token`) with distinct JWT audiences (`mystery-team` and `mystery-admin`) and independent expiration TTLs (8 hours for teams, 4 hours for admins).
 - **Rationale**: Prevents privilege escalation and credential re-use between participants and event organizers.
+
+### Decision 8: Realistic Cowboy Detective Aesthetics & Grounded Atmospheric Design
+- **Decision**: Transformed the portal's aesthetic from pop-art/comic colors into a grounded, authentic frontier cowboy detective bureau experience. Replaced comic cyan shadows and bright salmon bricks with aged parchment (`#F4EEE2`), saddle leather (`#59351D`), antique brass (`#B88D3D`), cold iron (`#2B2724`), and deep umber cast shadows (`#17110C`).
+- **Atmosphere & Lighting**: Removed jarring full-screen white lightning strobes and replaced them with realistic ambient microscopic dust motes (`DustMotes.tsx`), gentle kerosene lantern warmth breathing, and an authentic Wells Fargo iron-bound oak frontier strongbox with soft lantern interior illumination.
+- **Layout Invariance**: Preserved 100% of existing page layout structures, grid containers, and server contracts without regressions.

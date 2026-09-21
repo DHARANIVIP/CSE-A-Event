@@ -118,7 +118,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
               spellCheck={false}
               inputMode="text"
               aria-label={`Character ${idx + 1} of 5`}
-              className={`w-[52px] h-[60px] sm:w-[64px] sm:h-[72px] bg-cream border-4 rounded-md text-center font-mono font-black text-2xl sm:text-3xl text-ink uppercase shadow-hard transition-all duration-120 select-none focus:outline-none focus:ring-3 focus:ring-crimson focus:ring-offset-2 focus:shadow-hard-lg ${
+              className={`w-[52px] h-[60px] sm:w-[64px] sm:h-[72px] bg-cream border-3 rounded-sm text-center font-mono font-black text-2xl sm:text-3xl text-ink uppercase shadow-hard transition-all duration-120 select-none focus:outline-none focus:ring-2 focus:ring-brass focus:ring-offset-2 focus:shadow-hard-lg ${
                 hasError ? "border-danger ring-danger animate-shake" : "border-ink"
               } ${disabled ? "opacity-50 cursor-not-allowed border-dashed" : ""}`}
             />
