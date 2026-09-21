@@ -38,3 +38,8 @@ This log tracks daily operational audits, automated test verifications, and comp
 - Executed security audit on lightweight markdown parser (lib/markdown.ts).
 - Confirmed HTML sanitization and protection against malicious script/XSS payloads.
 
+
+### Checkpoint 2026-09-21 #8 (17:50 IST)
+- Verified dual-token session architecture (mb_team_token vs mb_admin_token).
+- Confirmed strict JWT audience separation and proper cookie isolation.
+
