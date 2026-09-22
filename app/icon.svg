@@ -1,11 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="14" fill="#B30033" />
-  <!-- Brim -->
-  <path d="M8 44 C8 40, 20 38, 32 38 C44 38, 56 40, 56 44 C56 47, 44 49, 32 49 C20 49, 8 47, 8 44 Z" fill="#0B0B0B" />
-  <!-- Crown -->
-  <path d="M20 38 C19 28, 22 17, 28 16 C31 18, 33 18, 36 16 C42 17, 45 28, 44 38 Z" fill="#0B0B0B" />
-  <!-- Crimson Ribbon -->
-  <path d="M20 36 C23 37, 41 37, 44 36 L43.5 32 C41 33, 23 33, 20.5 32 Z" fill="#FFF4E0" />
-  <!-- Question mark pin on ribbon -->
-  <circle cx="32" cy="27" r="2" fill="#E0A526" />
+  <rect width="64" height="64" rx="14" fill="#8C2626" stroke="#150F0A" stroke-width="2" />
+  <!-- Curled Western Brim -->
+  <path d="M6 42 C8 37, 18 39, 32 39 C46 39, 56 37, 58 42 C58 47, 46 49.5, 32 49.5 C18 49.5, 6 47, 6 42 Z" fill="#1C1511" />
+  <!-- Cattleman Crown -->
+  <path d="M19 39 C18 29, 21 19, 28 18 C30 20, 34 20, 36 18 C43 19, 46 29, 45 39 Z" fill="#241B15" />
+  <!-- Center Crease -->
+  <path d="M32 19 C31 23, 31 30, 32 36" stroke="#120E0A" stroke-width="1.5" stroke-linecap="round" />
+  <!-- Leather Hatband -->
+  <path d="M19 38.5 C23 39.5, 41 39.5, 45 38.5 L44.5 35 C41 36, 23 36, 19.5 35 Z" fill="#54331D" />
+  <!-- Brass Star Concho -->
+  <polygon points="32,34.5 32.7,35.8 34.2,35.9 33,36.8 33.4,38.2 32,37.4 30.6,38.2 31,36.8 29.8,35.9 31.3,35.8" fill="#C49A3E" />
 </svg>

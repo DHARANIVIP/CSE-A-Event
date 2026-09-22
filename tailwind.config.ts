@@ -9,13 +9,30 @@ const config: Config = {
     extend: {
       colors: {
         ink: "var(--ink)",
+        "ink-secondary": "var(--ink-secondary)",
         crimson: {
           DEFAULT: "var(--crimson)",
           dark: "var(--crimson-dark)",
         },
         paper: "var(--paper)",
         cream: "var(--cream)",
+        "paper-dark": "var(--paper-dark)",
         "cyan-shadow": "var(--cyan-shadow)",
+        "shadow-color": "var(--shadow-color)",
+        brass: {
+          DEFAULT: "var(--brass)",
+          dark: "var(--brass-dark)",
+        },
+        leather: {
+          DEFAULT: "var(--leather)",
+          dark: "var(--leather-dark)",
+        },
+        iron: "var(--iron)",
+        steel: "var(--steel)",
+        wood: {
+          dark: "var(--wood-dark)",
+          plank: "var(--wood-plank)",
+        },
         gold: "var(--gold)",
         danger: "var(--danger)",
         success: "var(--success)",

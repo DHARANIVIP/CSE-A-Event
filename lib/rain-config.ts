@@ -97,11 +97,11 @@ export const RAIN_DESKTOP_CONFIG: RainConfig = {
     lifeMs: 500,
   },
   lightning: {
-    enabled: true,
-    minGapSec: 25,
-    maxGapSec: 45,
-    flashMs: 160,
-    alpha: 0.08,
+    enabled: false,
+    minGapSec: 60,
+    maxGapSec: 120,
+    flashMs: 120,
+    alpha: 0.04,
   },
 };
 
