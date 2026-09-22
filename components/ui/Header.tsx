@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "../brand/Logo";
 import { TeamBadge } from "../brand/TeamBadge";
-import { BackgroundToggle } from "../background/BackgroundToggle";
-import { SoundToggle } from "../sound/SoundToggle";
 import { BackgroundPreferences } from "../background/useBackgroundPrefs";
 
 interface HeaderProps {
@@ -50,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({ bgPrefs }) => {
     { href: "/case", label: "CASE FILES" },
     { href: "/rules", label: "RULES" },
     { href: "/box", label: "MYSTERY BOX" },
+    { href: "/leaderboard", label: "LEADERBOARD" },
     { href: "/about", label: "ABOUT" },
   ];
 
@@ -84,9 +83,6 @@ export const Header: React.FC<HeaderProps> = ({ bgPrefs }) => {
 
         {/* Right: Controls & Team Badge */}
         <div className="flex items-center gap-2">
-          <SoundToggle />
-          <BackgroundToggle prefs={bgPrefs} />
-
           <div className="hidden sm:block">
             <TeamBadge
               teamId={team?.id}

@@ -1,20 +1,20 @@
-# About Mystery Box: The Digital Case
+# About DETECTRIX
 
-### The Technical Case Event
-**Mystery Box – The Digital Case** is an intensive digital forensics and technical problem-solving competition crafted exclusively for 2nd-year Computer Science & Engineering students.
+### Overview
+**DETECTRIX** (*Investigate. Connect. Decode. Unlock.*) is a team-based digital investigation challenge designed specifically for second-year Computer Science & Engineering students.
 
-### Philosophy
-> *"Solve — I can investigate and solve a technical problem."*
+### Objective & Philosophy
+The event tests observation, logical reasoning, teamwork, attention to detail, memory, and problem-solving under time pressure. Teams investigate a digital incident using log files to discover a final 10-character access code.
 
-Modern software engineering and cybersecurity require far more than memorizing algorithms: they demand investigative tenacity, forensic data analysis, and the ability to find needles in multi-gigabyte log haystacks. In this event, participants transition from passive students to active digital detectives.
-
-### Event Format & Details
-- **Target Audience**: 2nd-Year CSE Undergraduates
-- **Team Format**: 3–4 Investigators per Team
-- **Session Duration**: 2 Hours 30 Minutes
-- **Location**: Department Computing Centers & Labs
-- **Stack & Architecture**: Next.js, Supabase Postgres, Procedural Vector/Canvas UI, Cryptographic Scrypt Engine
+### Event Format Quick Specs
+- **Event Name**: DETECTRIX
+- **Target Audience**: Second-Year CSE Students
+- **Team Size**: 4 Members per Team
+- **Investigation Material**: Printed case briefing and log files (`system_logs.txt`, `devices.csv`, `access_logs.csv`, `login_logs.csv`, `network_traffic.csv`)
+- **Questions**: 10 Investigation Questions (Question 1 to Question 10)
+- **Hint Challenges**: 2 Hint Challenges (Two-Hand Shape & Memory Challenge)
+- **Final Output**: 10-Character Access Code
+- **Winning Criteria**: First successful correct submission to the Mystery Box
 
 ### Organizing Committee
-Organized by **{TEAM_NAME}** at **{COLLEGE_NAME}**.  
-For inquiries, contact the lab coordinators or visit the **Help** portal.
+Organized by **{TEAM_NAME}** at **{COLLEGE_NAME}**.

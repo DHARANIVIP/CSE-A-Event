@@ -7,33 +7,28 @@ import { eventConfig } from "@/config/event.config";
 
 const checkpointSchema = z
   .object({
-    stageId: z.enum(["stage1", "stage2", "stage3", "stage4", "stage5"]),
+    stageId: z.string().min(1).max(20),
     answer: z.string().min(1).max(50),
   })
   .strict();
 
-// Pre-configured cryptographic salts & hashes for the 5 checkpoint stages
+// Cryptographic salts & hashes for all 10 questions (q1 - q10)
 const CHECKPOINT_DEFINITIONS: Record<string, { salt: string; hash: string }> = {
-  stage1: {
-    salt: "STAGE1_SALT_16B",
-    hash: hashWithScrypt("3A:8F", "STAGE1_SALT_16B"),
-  },
-  stage2: {
-    salt: "STAGE2_SALT_16B",
-    hash: hashWithScrypt("192.168.4.112", "STAGE2_SALT_16B"),
-  },
-  stage3: {
-    salt: "STAGE3_SALT_16B",
-    hash: hashWithScrypt("B-8821", "STAGE3_SALT_16B"),
-  },
-  stage4: {
-    salt: "STAGE4_SALT_16B",
-    hash: hashWithScrypt("exfil_dump.py", "STAGE4_SALT_16B"),
-  },
-  stage5: {
-    salt: "STAGE5_SALT_16B",
-    hash: hashWithScrypt("7", "STAGE5_SALT_16B"),
-  },
+  q1: { salt: "Q1_SALT_16B", hash: hashWithScrypt("3A:8F", "Q1_SALT_16B") },
+  stage1: { salt: "Q1_SALT_16B", hash: hashWithScrypt("3A:8F", "Q1_SALT_16B") },
+  q2: { salt: "Q2_SALT_16B", hash: hashWithScrypt("192.168.4.112", "Q2_SALT_16B") },
+  stage2: { salt: "Q2_SALT_16B", hash: hashWithScrypt("192.168.4.112", "Q2_SALT_16B") },
+  q3: { salt: "Q3_SALT_16B", hash: hashWithScrypt("B-8821", "Q3_SALT_16B") },
+  stage3: { salt: "Q3_SALT_16B", hash: hashWithScrypt("B-8821", "Q3_SALT_16B") },
+  q4: { salt: "Q4_SALT_16B", hash: hashWithScrypt("EXFIL_DUMP.PY", "Q4_SALT_16B") },
+  stage4: { salt: "Q4_SALT_16B", hash: hashWithScrypt("EXFIL_DUMP.PY", "Q4_SALT_16B") },
+  q5: { salt: "Q5_SALT_16B", hash: hashWithScrypt("7", "Q5_SALT_16B") },
+  stage5: { salt: "Q5_SALT_16B", hash: hashWithScrypt("7", "Q5_SALT_16B") },
+  q6: { salt: "Q6_SALT_16B", hash: hashWithScrypt("4", "Q6_SALT_16B") },
+  q7: { salt: "Q7_SALT_16B", hash: hashWithScrypt("8", "Q7_SALT_16B") },
+  q8: { salt: "Q8_SALT_16B", hash: hashWithScrypt("ROOT", "Q8_SALT_16B") },
+  q9: { salt: "Q9_SALT_16B", hash: hashWithScrypt("9", "Q9_SALT_16B") },
+  q10: { salt: "Q10_SALT_16B", hash: hashWithScrypt("X", "Q10_SALT_16B") },
 };
 
 export async function POST(req: NextRequest) {
@@ -61,7 +56,7 @@ export async function POST(req: NextRequest) {
     body = checkpointSchema.parse(raw);
   } catch {
     return NextResponse.json(
-      { error: { code: "INVALID_REQUEST", message: "Invalid checkpoint submission format." } },
+      { error: { code: "INVALID_REQUEST", message: "Invalid question answer submission format." } },
       { status: 400 }
     );
   }
