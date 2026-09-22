@@ -5,18 +5,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "../brand/Logo";
 import { TeamBadge } from "../brand/TeamBadge";
-import { BackgroundToggle } from "../background/BackgroundToggle";
-import { SoundToggle } from "../sound/SoundToggle";
 import { BackgroundPreferences } from "../background/useBackgroundPrefs";
+import { LogoutIcon } from "../icons";
+import { LeaderboardModal } from "../case/LeaderboardModal";
 
 interface HeaderProps {
   bgPrefs: BackgroundPreferences;
 }
 
-export const Header: React.FC<HeaderProps> = ({ bgPrefs }) => {
+export const Header: React.FC<HeaderProps> = () => {
   const pathname = usePathname();
   const [team, setTeam] = useState<{ id: string; name: string } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
 
   useEffect(() => {
     // Check if team is logged in via /api/me
@@ -61,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({ bgPrefs }) => {
           <Logo isCompact />
         </div>
 
-        {/* Center: Desktop Nav Links */}
+        {/* Center: Desktop Text Nav Links */}
         <nav
           aria-label="Main Navigation"
           className="hidden md:flex items-center gap-6 font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-ink"
@@ -82,18 +83,35 @@ export const Header: React.FC<HeaderProps> = ({ bgPrefs }) => {
           })}
         </nav>
 
-        {/* Right: Controls & Team Badge */}
-        <div className="flex items-center gap-2">
-          <SoundToggle />
-          <BackgroundToggle prefs={bgPrefs} />
+        {/* Right: Controls, Leaderboard Button, Team Badge & Separate Logout Button */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Leaderboard Overlay Button */}
+          <button
+            onClick={() => setIsLeaderboardOpen(true)}
+            className="px-2.5 sm:px-3 py-1.5 bg-cream border-2 border-ink rounded font-mono text-xs font-bold text-ink uppercase tracking-wider shadow-hard-sm hover:text-crimson hover:-translate-y-0.5 hover:shadow-hard active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 select-none"
+            title="View Live Leaderboard"
+          >
+            <span className="text-brass">🏆</span>
+            <span className="hidden sm:inline">LEADERBOARD</span>
+          </button>
 
+          {/* Team Info Panel */}
           <div className="hidden sm:block">
-            <TeamBadge
-              teamId={team?.id}
-              teamName={team?.name}
-              onLogout={team ? handleLogout : undefined}
-            />
+            <TeamBadge teamId={team?.id} teamName={team?.name} />
           </div>
+
+          {/* Separate Logout Button (Immediately beside Team Badge) */}
+          {team && (
+            <button
+              onClick={handleLogout}
+              className="px-2.5 py-1.5 bg-cream border-2 border-ink rounded text-ink shadow-hard-sm hover:text-crimson hover:border-crimson hover:-translate-y-0.5 hover:shadow-hard active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 font-mono text-xs font-bold uppercase select-none"
+              title="Log out of session"
+              aria-label="Logout"
+            >
+              <LogoutIcon size={16} />
+              <span className="hidden lg:inline">LOGOUT</span>
+            </button>
+          )}
 
           {/* Mobile Hamburger Toggle */}
           <button
@@ -116,13 +134,19 @@ export const Header: React.FC<HeaderProps> = ({ bgPrefs }) => {
       {/* Mobile Dropdown Navigation */}
       {mobileMenuOpen && (
         <div className="md:hidden w-full max-w-7xl mx-auto mt-2 bg-paper border-3 border-ink rounded-md shadow-hard p-4 space-y-3 font-mono text-sm font-bold uppercase">
-          <div className="flex sm:hidden pb-2 border-b border-ink/20">
-            <TeamBadge
-              teamId={team?.id}
-              teamName={team?.name}
-              onLogout={team ? handleLogout : undefined}
-            />
+          <div className="flex items-center justify-between pb-2 border-b border-ink/20">
+            <TeamBadge teamId={team?.id} teamName={team?.name} />
+            {team && (
+              <button
+                onClick={handleLogout}
+                className="px-2.5 py-1 bg-cream border border-ink rounded text-crimson font-mono text-xs font-bold flex items-center gap-1"
+              >
+                <LogoutIcon size={14} />
+                <span>LOGOUT</span>
+              </button>
+            )}
           </div>
+
           <div className="grid grid-cols-2 gap-2">
             {navLinks.map((item) => (
               <Link
@@ -139,6 +163,12 @@ export const Header: React.FC<HeaderProps> = ({ bgPrefs }) => {
           </div>
         </div>
       )}
+
+      {/* Live Leaderboard Modal Overlay */}
+      <LeaderboardModal
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+      />
     </header>
   );
 };

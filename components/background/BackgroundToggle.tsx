@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { RainIcon, BrightnessIcon } from "../icons";
+import { RainIcon } from "../icons";
 import { BackgroundPreferences } from "./useBackgroundPrefs";
 
 interface BackgroundToggleProps {
@@ -25,18 +25,6 @@ export const BackgroundToggle: React.FC<BackgroundToggleProps> = ({ prefs }) => 
       >
         <RainIcon size={14} />
         <span className="hidden sm:inline">{prefs.rainEnabled ? "RAIN ON" : "RAIN OFF"}</span>
-      </button>
-
-      {/* Brick Brightness Level Cycler */}
-      <button
-        type="button"
-        onClick={prefs.cycleBrightness}
-        className="px-2 py-1 rounded text-xs font-mono font-bold uppercase transition-all flex items-center gap-1 hover:bg-paper text-ink select-none"
-        title={`Brick Brightness: Level ${prefs.brickBrightness} of 3 (Click to cycle)`}
-        aria-label={`Cycle brick contrast, current level ${prefs.brickBrightness}`}
-      >
-        <BrightnessIcon size={14} />
-        <span className="hidden md:inline font-mono">B{prefs.brickBrightness}</span>
       </button>
     </div>
   );

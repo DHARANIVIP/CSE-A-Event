@@ -38,16 +38,16 @@ export interface EventConfig {
 }
 
 export const eventConfig: EventConfig = {
-  eventName: process.env.NEXT_PUBLIC_EVENT_NAME || "Mystery Box",
-  subtitle: "The Digital Case",
+  eventName: process.env.NEXT_PUBLIC_EVENT_NAME || "DETECTRIX",
+  subtitle: "Investigate. Connect. Decode. Unlock.",
   organizerTeam: process.env.NEXT_PUBLIC_TEAM_NAME || "The Code Guild & Forensics Lab",
   collegeName: process.env.NEXT_PUBLIC_COLLEGE_NAME || "Department of Computer Science & Engineering",
-  philosophyTagline: "Solve — I can investigate and solve a technical problem.",
+  philosophyTagline: "Investigate. Connect. Decode. Unlock.",
   inspectorName: "Inspector Irratino",
-  inspectorQuote: "Look inside the data and between the lines; there you will find the answers.",
+  inspectorQuote: "Examine the printed log files, connect related records, and solve the 10 questions to unlock the access code.",
   year: 2026,
   expectedDuration: "2h 30m (10:00 AM – 12:30 PM IST)",
-  audience: "2nd-year CSE students, 3–4 members per team",
+  audience: "Second-Year CSE Students (4 Members per Team)",
   rateLimit: {
     teamSubmissionsPerMinute: 5,
     ipSubmissionsPerMinute: 30,
