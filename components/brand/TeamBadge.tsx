@@ -18,7 +18,7 @@ export const TeamBadge: React.FC<TeamBadgeProps> = ({
     return (
       <Link
         href="/enter"
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-cream border-2 border-ink rounded-sm font-mono text-xs uppercase tracking-wider font-bold text-ink hover:text-crimson shadow-hard-sm hover:-translate-y-0.5 hover:shadow-hard transition-all ${className}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-cream border-2 border-ink rounded font-mono text-xs uppercase tracking-wider font-bold text-ink hover:text-crimson shadow-hard-sm hover:-translate-y-0.5 hover:shadow-hard transition-all ${className}`}
       >
         <span className="text-brass">★</span>
         <span>ENTER AS TEAM</span>
@@ -27,7 +27,7 @@ export const TeamBadge: React.FC<TeamBadgeProps> = ({
   }
 
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1 bg-cream border-2 border-ink rounded shadow-hard-sm ${className}`}>
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 bg-cream border-2 border-ink rounded shadow-hard-sm select-none ${className}`}>
       <div className="flex flex-col">
         <span className="font-mono text-[10px] text-muted uppercase font-bold tracking-wider leading-none">
           TEAM #{teamId}
@@ -36,15 +36,6 @@ export const TeamBadge: React.FC<TeamBadgeProps> = ({
           {teamName || teamId}
         </span>
       </div>
-      {onLogout && (
-        <button
-          onClick={onLogout}
-          className="font-mono text-[11px] text-crimson hover:text-crimson-dark uppercase font-bold underline decoration-1 ml-1"
-          aria-label="Logout"
-        >
-          LOGOUT
-        </button>
-      )}
     </div>
   );
 };

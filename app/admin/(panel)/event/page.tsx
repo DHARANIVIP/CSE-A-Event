@@ -117,36 +117,60 @@ export default function AdminEventControlPage() {
         </div>
       </Panel>
 
-      {/* Case Archive Release & SHA-256 Control */}
-      <Panel className="space-y-4">
-        <h2 className="font-display text-xl uppercase text-crimson font-black">
-          CASE ARCHIVE RELEASE & INTEGRITY
-        </h2>
+      {/* Admin Case Files & Question Visibility Control */}
+      <Panel className="space-y-4 border-2 border-crimson">
+        <div>
+          <span className="font-mono text-xs font-black text-crimson uppercase tracking-widest block">
+            ADMIN CASE FILES MANAGEMENT
+          </span>
+          <h2 className="font-display text-xl uppercase text-crimson font-black">
+            INVESTIGATION QUESTIONS VISIBILITY
+          </h2>
+          <p className="font-mono text-xs text-muted mt-0.5">
+            Control when participants can view the 10 investigation questions. Evidence log files remain accessible to participants at all times.
+          </p>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-cream border-2 border-ink rounded shadow-hard-sm">
           <div className="space-y-1">
             <span className="font-mono text-xs uppercase font-bold text-muted block">
-              DOWNLOAD GATE STATUS
+              PARTICIPANT QUESTION STATUS
             </span>
-            <span
-              className={`font-mono text-sm font-black uppercase ${
-                eventState?.case_released ? "text-success" : "text-danger"
-              }`}
-            >
-              {eventState?.case_released ? "RELEASED (STUDENTS CAN DOWNLOAD)" : "LOCKED (RESTRICTED)"}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`w-3 h-3 rounded-full ${eventState?.case_released ? "bg-success animate-pulse" : "bg-danger"}`} />
+              <span
+                className={`font-mono text-sm font-black uppercase ${
+                  eventState?.case_released ? "text-success" : "text-danger"
+                }`}
+              >
+                {eventState?.case_released
+                  ? "SHOWING QUESTIONS TO PARTICIPANTS (10 QUESTIONS ACTIVE)"
+                  : "QUESTIONS HIDDEN FROM PARTICIPANTS"}
+              </span>
+            </div>
           </div>
 
-          <Button
-            variant={eventState?.case_released ? "secondary" : "primary"}
-            onClick={() => triggerAction("TOGGLE_CASE_RELEASE")}
-            isLoading={isUpdating}
-          >
-            {eventState?.case_released ? "LOCK CASE FILES" : "RELEASE CASE FILES"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              onClick={() => triggerAction("TOGGLE_CASE_RELEASE", { caseReleased: true })}
+              disabled={isUpdating || Boolean(eventState?.case_released)}
+              isLoading={isUpdating}
+            >
+              SHOW QUESTIONS TO PARTICIPANTS
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => triggerAction("TOGGLE_CASE_RELEASE", { caseReleased: false })}
+              disabled={isUpdating || !eventState?.case_released}
+              isLoading={isUpdating}
+            >
+              HIDE QUESTIONS
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 pt-2">
           <InputBar
             label="CASE ARCHIVE SHA-256 HASH"
             value={shaInput}

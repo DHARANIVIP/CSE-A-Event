@@ -12,12 +12,12 @@ export interface BackgroundPreferences {
 }
 
 export function useBackgroundPrefs(): BackgroundPreferences {
-  const [rainEnabled, setRainEnabledState] = useState(true);
+  const [rainEnabled, setRainEnabledState] = useState(false);
   const [brickBrightness, setBrickBrightness] = useState<BrickBrightnessLevel>(2);
 
   useEffect(() => {
     try {
-      // Check reduced motion preference
+      // Check reduced motion preference or stored setting
       const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
       if (mediaQuery.matches) {
         setRainEnabledState(false);
@@ -26,11 +26,7 @@ export function useBackgroundPrefs(): BackgroundPreferences {
         if (storedRain !== null) {
           setRainEnabledState(storedRain === "true");
         } else {
-          // Check saveData or low concurrency
-          const nav = navigator as unknown as { connection?: { saveData?: boolean }; hardwareConcurrency?: number };
-          if (nav.connection?.saveData || (nav.hardwareConcurrency && nav.hardwareConcurrency <= 2)) {
-            setRainEnabledState(false);
-          }
+          setRainEnabledState(false);
         }
       }
 
