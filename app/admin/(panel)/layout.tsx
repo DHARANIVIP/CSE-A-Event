@@ -43,12 +43,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const tabs = [
     { href: "/admin", label: "DASHBOARD" },
-    { href: "/admin/event", label: "EVENT CONTROL" },
-    { href: "/admin/teams", label: "TEAMS & CARDS" },
-    { href: "/admin/hints", label: "HINTS" },
-    { href: "/admin/submissions", label: "SUBMISSIONS" },
-    { href: "/admin/winner", label: "WINNER REVEAL" },
-    { href: "/admin/danger", label: "DANGER ZONE" },
+    { href: "/admin/leaderboard", label: "LEADERBOARD" },
+    { href: "/admin/teams", label: "REGISTERED STUDENTS" },
   ];
 
   return (
