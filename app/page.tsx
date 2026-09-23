@@ -4,6 +4,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Tile } from "@/components/ui/Tile";
 import { StatusBanner } from "@/components/ui/StatusBanner";
 import { CaseDossier } from "@/components/home/CaseDossier";
+import { CinematicDesertBackground } from "@/components/background/CinematicDesertBackground";
 import {
   CaseFolder,
   Rulebook,
@@ -33,9 +34,13 @@ export default async function HomePage() {
   const someoneSolved = mockDB.submissions.some((s) => s.is_correct);
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8 py-2 sm:py-4">
-      {/* 1. Main Hero Command Header */}
-      <section className="flex flex-col items-center justify-center space-y-3 sm:space-y-4 text-center">
+    <>
+      {/* 3D Cinematic Panoramic Desert Vista & Ambient Simulation */}
+      <CinematicDesertBackground />
+
+      <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8 py-2 sm:py-4 relative z-10">
+        {/* 1. Main Hero Command Header */}
+        <section className="flex flex-col items-center justify-center space-y-3 sm:space-y-4 text-center">
         {/* Main Logo Lockup */}
         <Logo />
 
@@ -122,5 +127,6 @@ export default async function HomePage() {
         </Link>
       </section>
     </div>
+  </>
   );
 }
