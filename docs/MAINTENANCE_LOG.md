@@ -1,4 +1,4 @@
-﻿# Operational Maintenance & Verification Log
+# Operational Maintenance & Verification Log
 
 This log tracks daily operational audits, automated test verifications, and compliance checks for **Mystery Box â€“ The Digital Case Event Portal**.
 
@@ -62,4 +62,32 @@ This log tracks daily operational audits, automated test verifications, and comp
 ### Checkpoint 2026-09-21 #12 (22:45 IST)
 - Executed complete Vitest test suite (8/8 test files, 30/30 unit tests passed).
 - Finalized daily operational sign-off and verification milestone.
+
+
+### Checkpoint 2026-09-23 #13 (22:00 IST)
+- Fast-forwarded and synchronized `dharani` working branch with `origin/dharani` (PR #7, merging latest `main` and `dharshini` updates).
+- Synchronized components and pages: updated `app/page.tsx`, `app/case/page.tsx`, created `app/leaderboard/page.tsx`, `components/case/LeaderboardModal.tsx`, `components/case/QuestionList.tsx`.
+- Audited working directory tree, git commit history, and active working state.
+- Prepared comprehensive UI design, landing page animation architecture, and admin command portal reconstruction plan.
+
+
+### Checkpoint 2026-09-23 #14 (22:35 IST)
+- Streamlined Admin Portal architecture into a 3-pillar navigation system (`DASHBOARD`, `LEADERBOARD`, `REGISTERED STUDENTS`).
+- Rebuilt `app/admin/(panel)/page.tsx` with central command deck (status lifecycle triggers, live countdown, question visibility switch), 4 KPI metric cards, and a dual-column split view displaying the Live Leaderboard and Registered Student roster.
+- Created dedicated Admin Leaderboard page (`app/admin/(panel)/leaderboard/page.tsx`) with real-time solver standings, podium cards, copyable summary, and fullscreen projector winner reveal mode.
+- Rebuilt Registered Students page (`app/admin/(panel)/teams/page.tsx`) removing CSV import clutter and focusing strictly on enrolled student data, member chips, and credential management.
+- Verified zero build errors via `npx next build` and 100% test pass rate across all Vitest suites.
+
+
+### Checkpoint 2026-09-23 #15 (23:55 IST)
+- Implemented `HeroMysteryBox.tsx` with 3D procedural perspective cursor tilt, warm lantern radial glow, and hover micro-interactions on the landing page.
+- Implemented `CaseDossier.tsx` presenting an authentic interactive Manila evidence dossier with folder tabs, red rubber stamps, incident briefing, evidence datasets breakdown, 10 deduction steps preview, and scoring guidelines.
+- Cleaned up admin dashboard layout removing velocity sparkline and recent submission log stream per organizer instruction.
+- Verified production build (`npx next build`) and 100% pass rate on test suites (`npm run test:unit`).
+
+
+### Checkpoint 2026-09-24 #16 (00:02 IST)
+- Removed `HeroMysteryBox` from `app/page.tsx` per organizer instruction, ensuring the interactive Mystery Box remains exclusive to the dedicated `/box` page.
+- Retained clean landing page command deck with the `MYSTERY BOX` navigation tile linking directly to `/box`.
+- Verified production build (`npx next build`) and 100% pass rate on test suites (`npm run test:unit`).
 

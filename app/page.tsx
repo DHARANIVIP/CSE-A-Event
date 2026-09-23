@@ -1,26 +1,21 @@
 import React from "react";
 import Link from "next/link";
-import fs from "node:fs";
-import path from "node:path";
 import { Logo } from "@/components/brand/Logo";
 import { Tile } from "@/components/ui/Tile";
 import { StatusBanner } from "@/components/ui/StatusBanner";
-import { Panel } from "@/components/ui/Panel";
+import { CaseDossier } from "@/components/home/CaseDossier";
 import {
   CaseFolder,
   Rulebook,
   ChestIcon,
   BadgeIcon,
   Fingerprint,
-  Magnifier,
-  Padlock,
   Trophy,
 } from "@/components/icons";
 import { getTeamSession } from "@/lib/auth";
 import { calculateEventStatus } from "@/lib/time";
 import { mockDB } from "@/lib/supabase-server";
 import { eventConfig } from "@/config/event.config";
-import { renderMarkdownToSafeHTML } from "@/lib/markdown";
 
 export const dynamic = "force-dynamic";
 
@@ -37,14 +32,9 @@ export default async function HomePage() {
 
   const someoneSolved = mockDB.submissions.some((s) => s.is_correct);
 
-  // Load Event Overview & Details (moved from case briefing)
-  const briefingPath = path.resolve(process.cwd(), "content/case-briefing.md");
-  const briefingRaw = fs.readFileSync(briefingPath, "utf-8");
-  const briefingHTML = renderMarkdownToSafeHTML(briefingRaw);
-
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 sm:space-y-8 py-2 sm:py-4">
-      {/* 1. Main Hero Command Header (Initial Viewport Optimized) */}
+    <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8 py-2 sm:py-4">
+      {/* 1. Main Hero Command Header */}
       <section className="flex flex-col items-center justify-center space-y-3 sm:space-y-4 text-center">
         {/* Main Logo Lockup */}
         <Logo />
@@ -69,7 +59,7 @@ export default async function HomePage() {
           />
         </div>
 
-        {/* Retro Detective Command Deck (ENTER AS TEAM on top, 4 cards below in a row) */}
+        {/* Retro Detective Command Deck */}
         <div className="w-full max-w-4xl pt-1 flex flex-col items-center gap-3 sm:gap-4">
           {/* Top wide card: ENTER AS TEAM */}
           <Tile
@@ -81,7 +71,7 @@ export default async function HomePage() {
             id="tile-team-access"
           />
 
-          {/* Single horizontal row for the navigation cards */}
+          {/* Single horizontal row for navigation cards */}
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <Tile href="/case" label="CASE FILES" icon={<CaseFolder />} id="tile-case-files" />
             <Tile href="/rules" label="RULES" icon={<Rulebook />} id="tile-rules" />
@@ -105,13 +95,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 2. Official Event Briefing & Details Section (Moved from Case Files Page) */}
-      <Panel as="article" className="space-y-4">
-        <div
-          className="prose prose-neutral max-w-none font-mono text-sm leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: briefingHTML }}
-        />
-      </Panel>
+      {/* 2. Interactive Manila Detective Case Dossier */}
+      <CaseDossier />
 
       {/* 3. Dispatch Action Callout */}
       <section className="bg-gradient-to-r from-cream to-paper border-3 border-ink rounded-md shadow-hard p-5 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-5 text-center sm:text-left">
