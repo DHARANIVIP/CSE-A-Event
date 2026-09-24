@@ -4,7 +4,7 @@ import { validateCSRF } from "@/lib/csrf";
 import { checkLoginRateLimit, recordLoginAttempt } from "@/lib/rate-limit";
 import { hashWithScrypt, timingSafeEqualString } from "@/lib/hash";
 import { signTeamToken, TEAM_COOKIE_NAME, TEAM_SESSION_TTL_SECONDS } from "@/lib/auth";
-import { mockDB } from "@/lib/supabase-server";
+import { mockDB, getSupabaseAdmin, isSupabaseConnected } from "@/lib/supabase-server";
 import { safeLog } from "@/lib/safe-log";
 
 const loginSchema = z
@@ -73,8 +73,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 5. Look up team in database
-  const team = mockDB.teams.get(normalizedTeamId);
+  // 5. Look up team in database (Live Supabase with mockDB fallback)
+  let team: {
+    id: string;
+    name: string;
+    members: string[];
+    pin_hash: string;
+    disabled: boolean;
+  } | null = null;
+
+  if (await isSupabaseConnected()) {
+    try {
+      const sb = getSupabaseAdmin();
+      const { data, error } = await sb
+        .from("teams")
+        .select("id, name, members, pin_hash, disabled")
+        .eq("id", normalizedTeamId)
+        .single();
+      if (!error && data) {
+        team = data;
+      }
+    } catch {
+      team = mockDB.teams.get(normalizedTeamId) || null;
+    }
+  } else {
+    team = mockDB.teams.get(normalizedTeamId) || null;
+  }
 
   // Constant-time execution: always perform scrypt hash verification (S8)
   const saltToUse = team ? team.pin_hash.split(":")[0] : "CONST_TIME_DUMMY_SALT_16B";
