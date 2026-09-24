@@ -37,8 +37,8 @@ export const Logo: React.FC<LogoProps> = ({ className = "", isCompact = false })
           style={{
             fontSize: "clamp(3.2rem, 11vw, 7.2rem)",
             textShadow:
-              "2px 2px 0 #150F0A, -1px -1px 0 #150F0A, 1px -1px 0 #150F0A, -1px 1px 0 #150F0A, 5px 5px 0px rgba(20, 14, 10, 0.75)",
-            WebkitTextStroke: "1.5px #150F0A",
+              "2px 2px 0 #2b1810, -1px -1px 0 #2b1810, 1px -1px 0 #2b1810, -1px 1px 0 #2b1810, 4px 4px 0px rgba(35, 20, 12, 0.45)",
+            WebkitTextStroke: "1px #2b1810",
           }}
         >
           <span className="hidden sm:inline">MYSTERY BOX</span>

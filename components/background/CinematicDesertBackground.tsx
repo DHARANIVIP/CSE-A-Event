@@ -16,6 +16,27 @@ interface DustParticle {
   wobbleSpeed: number;
 }
 
+interface SandGrain {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  length: number;
+  width: number;
+  alpha: number;
+  baseAlpha: number;
+}
+
+interface SandAirStream {
+  baseYPercent: number; // 0 to 1
+  amplitude: number;
+  wavelength: number;
+  speed: number;
+  thickness: number;
+  phase: number;
+  alpha: number;
+}
+
 interface SandPuff {
   x: number;
   y: number;
@@ -51,10 +72,10 @@ export const CinematicDesertBackground: React.FC = () => {
       setIsAudioMuted(muted);
     });
 
-    // Dissolve dust haze over 4 seconds
+    // Dissolve dust haze over 3.2 seconds
     const timer = setTimeout(() => {
       setHazeActive(false);
-    }, 4200);
+    }, 3200);
 
     return () => {
       unsubscribe();
@@ -68,7 +89,7 @@ export const CinematicDesertBackground: React.FC = () => {
     setIsAudioMuted(newMuted);
   }, []);
 
-  // Main Canvas 30fps animation loop for dust, rolling stone ball, tracks, and tumbleweed
+  // Main Canvas animation loop for sand air animation, dust motes, stone ball, and tumbleweed
   useEffect(() => {
     if (!isMounted || typeof window === "undefined") return;
 
@@ -93,45 +114,101 @@ export const CinematicDesertBackground: React.FC = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    // 1. Initialize Volumetric Desert Dust Particles
-    const dustCount = width < 768 ? 35 : 70;
+    // 1. Sand Air Streams (Flowing volumetric desert wind haze ribbons)
+    const sandStreams: SandAirStream[] = [
+      {
+        baseYPercent: 0.22,
+        amplitude: 18,
+        wavelength: 280,
+        speed: 0.0016,
+        thickness: 48,
+        phase: 0,
+        alpha: 0.08,
+      },
+      {
+        baseYPercent: 0.42,
+        amplitude: 24,
+        wavelength: 340,
+        speed: 0.0022,
+        thickness: 65,
+        phase: 1.8,
+        alpha: 0.11,
+      },
+      {
+        baseYPercent: 0.62,
+        amplitude: 20,
+        wavelength: 260,
+        speed: 0.0028,
+        thickness: 55,
+        phase: 3.4,
+        alpha: 0.13,
+      },
+      {
+        baseYPercent: 0.82,
+        amplitude: 16,
+        wavelength: 220,
+        speed: 0.0035,
+        thickness: 75,
+        phase: 4.8,
+        alpha: 0.16,
+      },
+    ];
+
+    // 2. High-speed Wind-blown Sand Air Grains (horizontal streaks)
+    const grainCount = width < 768 ? 60 : 130;
+    const sandGrains: SandGrain[] = [];
+    for (let i = 0; i < grainCount; i++) {
+      const vx = 2.8 + Math.random() * 4.6;
+      sandGrains.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx,
+        vy: (Math.random() - 0.4) * 0.45,
+        length: 6 + Math.random() * 14,
+        width: 0.8 + Math.random() * 1.4,
+        baseAlpha: 0.2 + Math.random() * 0.45,
+        alpha: 0.3,
+      });
+    }
+
+    // 3. Volumetric Floating Sand Dust Motes
+    const dustCount = width < 768 ? 30 : 60;
     const dustParticles: DustParticle[] = [];
     for (let i = 0; i < dustCount; i++) {
       dustParticles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: 0.25 + Math.random() * 0.75, // Wind pushing gently left to right
-        vy: (Math.random() - 0.45) * 0.35,
-        size: 0.8 + Math.random() * 2.2,
-        baseAlpha: 0.15 + Math.random() * 0.45,
+        vx: 0.4 + Math.random() * 0.8,
+        vy: (Math.random() - 0.45) * 0.3,
+        size: 0.8 + Math.random() * 2.0,
+        baseAlpha: 0.15 + Math.random() * 0.35,
         alpha: 0.2,
         wobble: Math.random() * Math.PI * 2,
-        wobbleSpeed: 0.01 + Math.random() * 0.025,
+        wobbleSpeed: 0.012 + Math.random() * 0.02,
       });
     }
 
-    // 2. Rolling Stone Ball State
-    const ballRadius = width < 768 ? 24 : 34;
+    // 4. Rolling Stone Ball State
+    const ballRadius = width < 768 ? 22 : 32;
     let ballX = -ballRadius * 2;
-    const groundY = height * 0.89; // Low ground line in shallow depth of field
+    const groundY = height * 0.9;
     let ballAngle = 0;
-    const ballSpeed = 1.05; // steady slow roll
+    const ballSpeed = 1.05;
     let lastAudioStep = 0;
 
-    // Track trails and dust puffs
     const tracks: SandTrackSegment[] = [];
     const sandPuffs: SandPuff[] = [];
     let frameCounter = 0;
 
-    // 3. Tumbleweed State
+    // 5. Tumbleweed State
     let tumbleX = width + 80;
-    let tumbleY = height * 0.82;
+    let tumbleY = height * 0.83;
     let tumbleAngle = 0;
-    let tumbleSpeed = 1.6;
+    let tumbleSpeed = 1.7;
     let tumbleBounce = 0;
-    const tumbleRadius = width < 768 ? 20 : 28;
+    const tumbleRadius = width < 768 ? 18 : 26;
 
-    // 4. Crater / Rock details for the 3D rotating stone ball (spherical coordinates)
+    // 6. Stone Ball 3D Cratering
     const stoneDetails = [
       { u: 0.0, v: 0.15, r: ballRadius * 0.22, depth: 0.35 },
       { u: 0.9, v: -0.3, r: ballRadius * 0.18, depth: 0.4 },
@@ -144,61 +221,142 @@ export const CinematicDesertBackground: React.FC = () => {
     let lastTime = performance.now();
 
     const render = (now: number) => {
-      const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
       frameCounter++;
 
       ctx.clearRect(0, 0, width, height);
 
-      // --- LAYER A: Floating Sand & Volumetric Dust Motes ---
+      // ===============================================================
+      // LAYER 1: PROCEDURAL SAND AIR WIND STREAMS (Atmospheric Blowing Sand)
+      // Soft, glowing horizontal ribbons of sand-laden desert air
+      // ===============================================================
+      const gustCycle = Math.sin(now * 0.0008) * 0.25 + 0.75; // subtle breathing wind gust cycle
+
+      for (let s = 0; s < sandStreams.length; s++) {
+        const stream = sandStreams[s];
+        stream.phase += stream.speed;
+
+        const cy = stream.baseYPercent * height;
+        const currentAlpha = stream.alpha * gustCycle;
+
+        // Draw flowing sand air ribbon
+        ctx.save();
+        ctx.beginPath();
+
+        const step = 40;
+        let first = true;
+
+        // Top edge of the sand air ribbon
+        for (let x = -40; x <= width + 40; x += step) {
+          const wave =
+            Math.sin(x / stream.wavelength + stream.phase) * stream.amplitude +
+            Math.cos((x * 0.6) / stream.wavelength + stream.phase * 1.3) *
+              (stream.amplitude * 0.4);
+          const y = cy + wave - stream.thickness * 0.5;
+
+          if (first) {
+            ctx.moveTo(x, y);
+            first = false;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+
+        // Bottom edge of the sand air ribbon (going backward)
+        for (let x = width + 40; x >= -40; x -= step) {
+          const wave =
+            Math.sin(x / stream.wavelength + stream.phase) * stream.amplitude +
+            Math.cos((x * 0.6) / stream.wavelength + stream.phase * 1.3) *
+              (stream.amplitude * 0.4);
+          const y = cy + wave + stream.thickness * 0.5;
+          ctx.lineTo(x, y);
+        }
+
+        ctx.closePath();
+
+        // Warm desert sand gradient
+        const streamGrad = ctx.createLinearGradient(0, cy - stream.thickness, 0, cy + stream.thickness);
+        streamGrad.addColorStop(0, "rgba(240, 214, 168, 0)");
+        streamGrad.addColorStop(0.5, `rgba(238, 202, 146, ${currentAlpha.toFixed(3)})`);
+        streamGrad.addColorStop(1, "rgba(240, 214, 168, 0)");
+
+        ctx.fillStyle = streamGrad;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // ===============================================================
+      // LAYER 2: FAST-MOVING SAND AIR PARTICLES (Wind-Blown Sand Grains)
+      // Whisked across the screen by horizontal desert air currents
+      // ===============================================================
+      ctx.save();
+      for (let i = 0; i < sandGrains.length; i++) {
+        const g = sandGrains[i];
+        g.x += g.vx * gustCycle;
+        g.y += g.vy + Math.sin(g.x * 0.015) * 0.35;
+
+        // Reset particle once blown off-screen
+        if (g.x > width + 40) {
+          g.x = -30 - Math.random() * 40;
+          g.y = Math.random() * height;
+        }
+
+        const alpha = g.baseAlpha * gustCycle;
+        ctx.beginPath();
+        ctx.moveTo(g.x, g.y);
+        ctx.lineTo(g.x - g.length, g.y - g.vy * 2);
+        ctx.strokeStyle = `rgba(245, 218, 165, ${alpha.toFixed(3)})`;
+        ctx.lineWidth = g.width;
+        ctx.lineCap = "round";
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // ===============================================================
+      // LAYER 3: FLOATING VOLUMETRIC SAND DUST MOTES
+      // Gentle sunlit desert dust floating lazily in the air
+      // ===============================================================
       for (let i = 0; i < dustParticles.length; i++) {
         const p = dustParticles[i];
         p.wobble += p.wobbleSpeed;
-        p.x += p.vx * (1 + Math.sin(p.wobble) * 0.3);
-        p.y += p.vy + Math.cos(p.wobble) * 0.2;
+        p.x += p.vx * (1 + Math.sin(p.wobble) * 0.35) * gustCycle;
+        p.y += p.vy + Math.cos(p.wobble) * 0.25;
 
         if (p.x > width + 20) p.x = -20;
         if (p.y > height + 20) p.y = -20;
         if (p.y < -20) p.y = height + 20;
 
-        const currentAlpha = p.baseAlpha * (0.65 + Math.sin(p.wobble) * 0.35);
+        const currentAlpha = p.baseAlpha * (0.7 + Math.sin(p.wobble) * 0.3);
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        // Golden sunlit desert sand motes
-        ctx.fillStyle = `rgba(245, 218, 168, ${currentAlpha.toFixed(3)})`;
-        ctx.shadowColor = "rgba(255, 210, 140, 0.4)";
-        ctx.shadowBlur = 4;
+        ctx.fillStyle = `rgba(248, 224, 180, ${currentAlpha.toFixed(3)})`;
+        ctx.shadowColor = "rgba(255, 220, 160, 0.3)";
+        ctx.shadowBlur = 3;
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
-      // --- LAYER B: Midground Tumbleweed ---
-      tumbleX -= tumbleSpeed;
+      // ===============================================================
+      // LAYER 4: TUMBLEWEED
+      // ===============================================================
+      tumbleX -= tumbleSpeed * gustCycle;
       tumbleAngle -= 0.035;
       tumbleBounce += 0.055;
-      const currentTumbleY = tumbleY - Math.abs(Math.sin(tumbleBounce)) * 22;
+      const currentTumbleY = tumbleY - Math.abs(Math.sin(tumbleBounce)) * 20;
 
-      // Draw faint tumbleweed shadow on sand
+      // Soft tumbleweed shadow
       ctx.save();
       ctx.beginPath();
-      ctx.ellipse(
-        tumbleX,
-        groundY - 10,
-        tumbleRadius * 0.9,
-        tumbleRadius * 0.28,
-        0,
-        0,
-        Math.PI * 2
-      );
-      ctx.fillStyle = "rgba(40, 22, 12, 0.18)";
+      ctx.ellipse(tumbleX, groundY - 10, tumbleRadius * 0.85, tumbleRadius * 0.25, 0, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(45, 25, 14, 0.12)";
       ctx.fill();
 
-      // Draw tumbleweed branching fibrous sphere
+      // Tumbleweed branches
       ctx.translate(tumbleX, currentTumbleY);
       ctx.rotate(tumbleAngle);
-      ctx.strokeStyle = "rgba(110, 80, 52, 0.65)";
-      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = "rgba(115, 84, 56, 0.6)";
+      ctx.lineWidth = 1.3;
 
       for (let j = 0; j < 6; j++) {
         ctx.beginPath();
@@ -207,42 +365,40 @@ export const CinematicDesertBackground: React.FC = () => {
       }
       ctx.restore();
 
-      // Reset tumbleweed when past screen
       if (tumbleX < -tumbleRadius * 3) {
         tumbleX = width + 100 + Math.random() * 200;
         tumbleSpeed = 1.3 + Math.random() * 0.7;
       }
 
-      // --- LAYER C: Sand Groove Track Behind Rolling Stone Ball ---
+      // ===============================================================
+      // LAYER 5: ROLLING STONE BALL & TRACKS
+      // ===============================================================
       ballX += ballSpeed;
       ballAngle += ballSpeed / ballRadius;
 
-      // Add track segment every 5 frames
       if (frameCounter % 4 === 0 && ballX > -ballRadius && ballX < width + ballRadius * 2) {
         tracks.push({
           x: ballX - ballRadius * 0.1,
           y: groundY + ballRadius * 0.82,
           width: ballRadius * 0.9,
-          alpha: 0.38,
+          alpha: 0.3,
         });
-        if (tracks.length > 180) {
-          tracks.shift();
-        }
+        if (tracks.length > 180) tracks.shift();
       }
 
-      // Draw sand track impressions
+      // Soft sand tracks
       for (let i = 0; i < tracks.length; i++) {
         const tr = tracks[i];
-        tr.alpha *= 0.9985; // slowly get covered by drifting desert sand
+        tr.alpha *= 0.9985;
         if (tr.alpha > 0.02) {
           ctx.beginPath();
           ctx.ellipse(tr.x, tr.y, tr.width * 0.5, 3.5, 0, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(60, 36, 18, ${tr.alpha.toFixed(3)})`;
+          ctx.fillStyle = `rgba(75, 48, 28, ${tr.alpha.toFixed(3)})`;
           ctx.fill();
         }
       }
 
-      // --- LAYER D: Sand Dust Puffs from the Rolling Ball ---
+      // Sand dust puffs
       if (frameCounter % 9 === 0 && ballX > 0 && ballX < width) {
         sandPuffs.push({
           x: ballX - ballRadius * 0.6,
@@ -250,19 +406,17 @@ export const CinematicDesertBackground: React.FC = () => {
           vx: -(0.3 + Math.random() * 0.4),
           vy: -(0.2 + Math.random() * 0.3),
           size: 2.5 + Math.random() * 4,
-          alpha: 0.35,
+          alpha: 0.3,
           maxLife: 40 + Math.random() * 25,
           life: 0,
         });
 
-        // Procedural audio step
         if (now - lastAudioStep > 600) {
           desertAudio.playRollingStoneStep();
           lastAudioStep = now;
         }
       }
 
-      // Render and update sand puffs
       for (let i = sandPuffs.length - 1; i >= 0; i--) {
         const puff = sandPuffs[i];
         puff.life++;
@@ -279,14 +433,14 @@ export const CinematicDesertBackground: React.FC = () => {
 
         ctx.beginPath();
         ctx.arc(puff.x, puff.y, puff.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(215, 185, 142, ${currentAlpha.toFixed(3)})`;
+        ctx.fillStyle = `rgba(224, 196, 155, ${currentAlpha.toFixed(3)})`;
         ctx.fill();
       }
 
-      // --- LAYER E: Ultra-Realistic Sand-Textured Stone Ball ---
+      // 3D Stone Sphere
       const ballCenterY = groundY;
 
-      // 1. Soft contact ambient occlusion shadow on desert floor
+      // Contact shadow
       ctx.save();
       ctx.beginPath();
       ctx.ellipse(
@@ -298,18 +452,17 @@ export const CinematicDesertBackground: React.FC = () => {
         0,
         Math.PI * 2
       );
-      ctx.fillStyle = "rgba(22, 12, 6, 0.52)";
+      ctx.fillStyle = "rgba(30, 18, 10, 0.4)";
       ctx.filter = "blur(3px)";
       ctx.fill();
       ctx.restore();
 
-      // 2. Stone Sphere Base with Spherical 3D Shading
+      // Stone Ball Base
       ctx.save();
       ctx.beginPath();
       ctx.arc(ballX, ballCenterY, ballRadius, 0, Math.PI * 2);
       ctx.clip();
 
-      // Radial sunlight gradient coming from top-left (saloon sun flare)
       const grad = ctx.createRadialGradient(
         ballX - ballRadius * 0.38,
         ballCenterY - ballRadius * 0.38,
@@ -318,15 +471,15 @@ export const CinematicDesertBackground: React.FC = () => {
         ballCenterY,
         ballRadius
       );
-      grad.addColorStop(0.0, "#fff5dd"); // Intense warm desert specular glint
-      grad.addColorStop(0.2, "#e3bc88"); // Sunlit desert sandstone
-      grad.addColorStop(0.55, "#ab7b49"); // Weathered stone midtone
-      grad.addColorStop(0.82, "#684523"); // Core shadow
-      grad.addColorStop(1.0, "#2a180b"); // Dark rim and ambient occlusion
+      grad.addColorStop(0.0, "#fff5dd");
+      grad.addColorStop(0.2, "#e3bc88");
+      grad.addColorStop(0.55, "#ab7b49");
+      grad.addColorStop(0.82, "#684523");
+      grad.addColorStop(1.0, "#2a180b");
       ctx.fillStyle = grad;
       ctx.fillRect(ballX - ballRadius, ballCenterY - ballRadius, ballRadius * 2, ballRadius * 2);
 
-      // 3. Sandstone rough grain texture flecks
+      // Texture flecks
       ctx.fillStyle = "rgba(45, 25, 12, 0.35)";
       for (let s = 0; s < 14; s++) {
         const sx = ballX + Math.sin(s * 1.7) * (ballRadius * 0.7);
@@ -334,33 +487,22 @@ export const CinematicDesertBackground: React.FC = () => {
         ctx.fillRect(sx, sy, 1.2, 1.2);
       }
 
-      // 4. Realistic 3D rotating surface craters / indentations
+      // Craters
       for (let k = 0; k < stoneDetails.length; k++) {
         const item = stoneDetails[k];
         const theta = item.u + ballAngle;
         const cosTheta = Math.cos(theta);
 
-        // Render only if on visible forward hemisphere
         if (cosTheta > -0.2) {
           const depthScale = Math.max(0, cosTheta);
           const px = ballX + cosTheta * (ballRadius * 0.78);
           const py = ballCenterY + item.v * (ballRadius * 0.78);
 
           ctx.beginPath();
-          ctx.ellipse(
-            px,
-            py,
-            item.r * depthScale,
-            item.r * 0.75,
-            0,
-            0,
-            Math.PI * 2
-          );
-          // Indented shadow
+          ctx.ellipse(px, py, item.r * depthScale, item.r * 0.75, 0, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(35, 18, 8, ${(item.depth * depthScale).toFixed(2)})`;
           ctx.fill();
 
-          // Subtle sunlit rim around crater edge
           ctx.strokeStyle = `rgba(255, 235, 195, ${(0.35 * depthScale).toFixed(2)})`;
           ctx.lineWidth = 1;
           ctx.stroke();
@@ -369,7 +511,6 @@ export const CinematicDesertBackground: React.FC = () => {
 
       ctx.restore();
 
-      // Wrap ball when rolls past right edge of screen
       if (ballX > width + ballRadius * 3) {
         ballX = -ballRadius * 2;
         tracks.length = 0;
@@ -391,14 +532,14 @@ export const CinematicDesertBackground: React.FC = () => {
   return (
     <>
       {/* ========================================================
-          1. 21:9 ULTRA-WIDE CINEMATIC SALOON BACKGROUND CONTAINER
-          Fixed, full-viewport background with smooth camera movement
+          1. CINEMATIC DESERT BACKGROUND CONTAINER
+          Softened contrast + warm atmospheric sand ambient wash
           ======================================================== */}
       <div
         className="fixed inset-0 pointer-events-none -z-20 overflow-hidden select-none no-print"
         aria-hidden="true"
       >
-        {/* Continuous cinematic camera glide & pan */}
+        {/* Soft, continuous cinematic camera glide & pan */}
         <div
           className={`absolute inset-[-6%] w-[112%] h-[112%] transition-transform duration-1000 ease-out ${
             isCameraPaused ? "" : "animate-cinematic-desert-camera"
@@ -411,63 +552,80 @@ export const CinematicDesertBackground: React.FC = () => {
             fill
             priority
             sizes="100vw"
-            className="object-cover object-center filter saturate-[1.08] contrast-[1.04]"
+            className="object-cover object-center filter brightness-[0.96] contrast-[0.90] saturate-[0.92]"
           />
         </div>
 
-        {/* Dynamic Canvas Simulation (Particles, Rolling Stone Ball, Tumbleweed) */}
+        {/* Warm desert sand air wash (Harmonizes background, eliminates harsh stark contrast) */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(235, 198, 150, 0.16) 0%, rgba(220, 168, 120, 0.12) 40%, rgba(195, 140, 95, 0.18) 100%)",
+            mixBlendMode: "color-burn",
+          }}
+        />
+
+        {/* Ambient warm golden atmospheric glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundColor: "rgba(224, 185, 142, 0.14)",
+          }}
+        />
+
+        {/* Active Sand Air & Wind Canvas (Procedural blowing sand ribbons & wind streaks) */}
         <canvas
           ref={canvasRef}
           className="absolute inset-0 w-full h-full pointer-events-none"
         />
 
-        {/* Low Sun Flare Bloom Flaring Through Saloon & Trees */}
+        {/* Soft Sun Flare Bloom Flaring Through Saloon & Mesa */}
         <div
-          className="absolute top-0 right-0 w-[60vw] h-[55vh] pointer-events-none opacity-45 mix-blend-screen"
+          className="absolute top-0 right-0 w-[55vw] h-[50vh] pointer-events-none opacity-30 mix-blend-screen"
           style={{
             background:
-              "radial-gradient(circle at 75% 25%, rgba(255, 225, 160, 0.75) 0%, rgba(240, 160, 80, 0.35) 45%, transparent 75%)",
+              "radial-gradient(circle at 75% 25%, rgba(255, 230, 175, 0.65) 0%, rgba(240, 175, 105, 0.25) 50%, transparent 75%)",
           }}
         />
 
         {/* ========================================================
-            2. INITIAL BRIGHT WHITE DUST HAZE OVERLAY
-            Opens on bright white haze that slowly clears over 4s
+            2. INITIAL DESERT DUST HAZE OVERLAY
+            Opens on warm dust haze that smoothly dissolves
             ======================================================== */}
         <div
-          className={`fixed inset-0 z-10 pointer-events-none transition-opacity duration-[3500ms] ease-out ${
+          className={`fixed inset-0 z-10 pointer-events-none transition-opacity duration-[3000ms] ease-out ${
             hazeActive ? "opacity-100" : "opacity-0"
           }`}
           style={{
             background:
-              "radial-gradient(ellipse at 50% 40%, rgba(255, 252, 242, 0.98) 0%, rgba(248, 235, 205, 0.92) 55%, rgba(220, 185, 140, 0.85) 100%)",
-            backdropFilter: hazeActive ? "blur(14px)" : "blur(0px)",
+              "radial-gradient(ellipse at 50% 40%, rgba(255, 248, 232, 0.95) 0%, rgba(244, 226, 192, 0.88) 55%, rgba(215, 178, 132, 0.8) 100%)",
+            backdropFilter: hazeActive ? "blur(10px)" : "blur(0px)",
           }}
         />
 
         {/* ========================================================
-            3. CINEMATIC 21:9 LETTERBOX & CONTRAST PROTECTION VIGNETTE
-            Ensures all cards, dossier, and buttons stay 100% readable
+            3. HARMONIOUS WARM DESERT VIGNETTE (NON-OVER-CONTRAST)
+            Replaces pitch-black vignettes with soft warm shadows
             ======================================================== */}
-        {/* Top bar vignette */}
-        <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-ink/80 via-ink/35 to-transparent pointer-events-none" />
+        {/* Soft header ambient gradient */}
+        <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-[#1a1410]/35 via-[#1a1410]/10 to-transparent pointer-events-none" />
 
-        {/* Bottom deep gradient ensuring paper cards pop */}
-        <div className="absolute bottom-0 inset-x-0 h-72 bg-gradient-to-t from-ink/90 via-ink/45 to-transparent pointer-events-none" />
+        {/* Soft warm footer gradient - ensures buttons and cards stand out without harsh black contrast */}
+        <div className="absolute bottom-0 inset-x-0 h-44 bg-gradient-to-t from-[#24170f]/40 via-[#24170f]/15 to-transparent pointer-events-none" />
 
-        {/* Subtle radial film vignette */}
+        {/* Very soft warm perimeter vignette */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 50%, rgba(12, 10, 9, 0.1) 0%, rgba(12, 10, 9, 0.55) 100%)",
+              "radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(45, 28, 18, 0.22) 100%)",
           }}
         />
       </div>
 
       {/* ========================================================
-          4. INTERACTIVE AMBIENT CONTROLS (Corner Control Deck)
-          Allows user to toggle procedural desert audio & camera glide
+          4. AMBIENT AUDIO & VISUAL CONTROLS (Corner Control Deck)
           ======================================================== */}
       <aside
         aria-label="Cinematic background and ambience controls"
@@ -483,7 +641,7 @@ export const CinematicDesertBackground: React.FC = () => {
               ? "Turn on procedural desert audio ambience"
               : "Mute procedural desert audio ambience"
           }
-          className="flex items-center gap-2 px-3 py-1.5 bg-paper/95 hover:bg-cream border-2 border-ink rounded font-mono text-xs font-black text-ink shadow-hard transition-all active:translate-y-0.5 active:shadow-none pointer-events-auto"
+          className="flex items-center gap-2 px-3 py-1.5 bg-[#fbf5e8]/95 hover:bg-[#ebdcc4] border-2 border-[#1a1410] rounded font-mono text-xs font-black text-[#1a1410] shadow-sm transition-all active:translate-y-0.5 pointer-events-auto"
         >
           {isAudioMuted ? (
             <>
@@ -496,7 +654,6 @@ export const CinematicDesertBackground: React.FC = () => {
               <span className="text-crimson">🏜️</span>
               <span className="hidden sm:inline">DESERT AMBIENCE:</span>
               <span className="text-emerald-700">ACTIVE</span>
-              {/* Mini animated audio visualizer bars */}
               <span className="flex items-end gap-0.5 h-3 ml-0.5" aria-hidden="true">
                 <span className="w-1 bg-crimson rounded-full animate-bounce h-2" />
                 <span className="w-1 bg-crimson rounded-full animate-bounce [animation-delay:0.15s] h-3" />
@@ -512,10 +669,10 @@ export const CinematicDesertBackground: React.FC = () => {
           onClick={() => setIsCameraPaused((prev) => !prev)}
           title={isCameraPaused ? "Resume camera glide" : "Pause camera glide"}
           aria-label={isCameraPaused ? "Resume camera glide" : "Pause camera glide"}
-          className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-ink/85 hover:bg-ink text-paper border-2 border-ink rounded font-mono text-[11px] font-bold shadow-hard transition-all pointer-events-auto"
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-[#1a1410]/80 hover:bg-[#1a1410] text-[#fbf5e8] border border-[#1a1410] rounded font-mono text-[11px] font-bold shadow-sm transition-all pointer-events-auto"
         >
           <span className="w-2 h-2 rounded-full bg-crimson animate-pulse" />
-          <span>21:9 CINEMATIC 4K</span>
+          <span>21:9 CINEMATIC</span>
         </button>
       </aside>
 
@@ -523,30 +680,30 @@ export const CinematicDesertBackground: React.FC = () => {
       <style jsx global>{`
         @keyframes cinematicDesertGlide {
           0% {
-            transform: scale(1.04) translate(0%, 0%);
+            transform: scale(1.03) translate(0%, 0%);
           }
           25% {
-            transform: scale(1.12) translate(-2.2%, -1.2%);
+            transform: scale(1.08) translate(-1.8%, -1%);
           }
           50% {
-            transform: scale(1.17) translate(-3.8%, -2.2%);
+            transform: scale(1.12) translate(-3%, -1.8%);
           }
           75% {
-            transform: scale(1.11) translate(-1.4%, -3.2%);
+            transform: scale(1.07) translate(-1.2%, -2.4%);
           }
           100% {
-            transform: scale(1.04) translate(0%, 0%);
+            transform: scale(1.03) translate(0%, 0%);
           }
         }
 
         .animate-cinematic-desert-camera {
-          animation: cinematicDesertGlide 42s ease-in-out infinite alternate;
+          animation: cinematicDesertGlide 44s ease-in-out infinite alternate;
         }
 
         @media (prefers-reduced-motion: reduce) {
           .animate-cinematic-desert-camera {
             animation: none !important;
-            transform: scale(1.05) !important;
+            transform: scale(1.04) !important;
           }
         }
       `}</style>

@@ -7,6 +7,8 @@ import { Panel } from "@/components/ui/Panel";
 import { QuestionList } from "@/components/case/QuestionList";
 import { mockDB } from "@/lib/supabase-server";
 
+import { LeaderboardTriggerButton } from "@/components/case/LeaderboardTriggerButton";
+
 export const dynamic = "force-dynamic";
 
 export default async function CasePage() {
@@ -33,13 +35,16 @@ export default async function CasePage() {
   return (
     <div className="space-y-8 max-w-4xl mx-auto py-2">
       {/* Header Bar */}
-      <div className="border-b-3 border-ink pb-3">
-        <span className="font-mono text-xs font-black text-crimson uppercase tracking-widest block">
-          DETECTRIX FORENSIC STATION
-        </span>
-        <h1 className="font-display text-3xl sm:text-4xl text-crimson uppercase font-black tracking-tight mt-0.5">
-          CASE FILES & EVIDENCE
-        </h1>
+      <div className="border-b-3 border-ink pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <span className="font-mono text-xs font-black text-crimson uppercase tracking-widest block">
+            DETECTRIX FORENSIC STATION
+          </span>
+          <h1 className="font-display text-3xl sm:text-4xl text-crimson uppercase font-black tracking-tight mt-0.5">
+            CASE FILES & EVIDENCE
+          </h1>
+        </div>
+        <LeaderboardTriggerButton />
       </div>
 
       {/* 1. Case Files Names & Datasets (First Section) */}
