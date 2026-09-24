@@ -91,3 +91,21 @@ This log tracks daily operational audits, automated test verifications, and comp
 - Retained clean landing page command deck with the `MYSTERY BOX` navigation tile linking directly to `/box`.
 - Verified production build (`npx next build`) and 100% pass rate on test suites (`npm run test:unit`).
 
+
+### Checkpoint 2026-09-24 #17 (00:35 IST)
+- Generated high-resolution ultra-realistic cinematic 3D render (`public/assets/desert-saloon-cinematic.jpg`) of weathered two-storey wooden western saloon with wraparound balcony in red-rock mesa desert.
+- Implemented `components/background/CinematicDesertBackground.tsx` with:
+  - 21:9 ultrawide panoramic continuous camera pan/zoom keyframe glide (`animate-cinematic-desert-camera`).
+  - Initial bright white dust haze overlay that slowly dissolves over 3.5s.
+  - HTML5 canvas particle layer with floating sand & volumetric dust particles reacting to ambient wind.
+  - Procedural rolling sand-textured solid stone ball with 3D spherical shading and visible rotating surface craters, leaving a faint depression track in the sand and kicking up dust puffs.
+  - Procedural drifting and tumbling midground tumbleweed sphere.
+  - Sun lens flare bloom flaring through tree branches and saloon facade.
+  - Protective top and bottom gradient vignettes ensuring 100% contrast and readability for all landing page UI elements.
+  - Interactive bottom-right control deck with procedural audio mute/unmute toggle and visual equalizer bars.
+- Implemented `components/sound/DesertAudioAmbience.ts` synthesizing desert wind gusts, weathered saloon wood creaks, and rolling stone friction entirely in Web Audio API with zero external audio files.
+- Isolated cinematic desert background strictly to the landing page (`/`), ensuring all other routes (`/enter`, `/case`, `/box`, `/leaderboard`, `/rules`, `/admin/*`) preserve their clean brick/paper theme.
+- Verified compilation with zero errors via `npx next build` (Turbopack) and 25/25 passing unit tests via `npm run test:unit`.
+- Conducted full browser subagent visual validation confirming animations, audio toggle, and page isolation.
+
+

@@ -10,25 +10,29 @@ import { useBackgroundPrefs } from "../background/useBackgroundPrefs";
 import { SkipLink } from "./SkipLink";
 import { eventConfig } from "@/config/event.config";
 
+import { usePathname } from "next/navigation";
+
 export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const bgPrefs = useBackgroundPrefs();
+  const pathname = usePathname();
+  const isLandingPage = pathname === "/";
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between overflow-x-hidden">
       <SkipLink />
       <OfflineBanner />
 
-      {/* Procedural Canvas & CSS Brick Wall Background */}
-      <BrickBackground
-        brightnessLevel={bgPrefs.brickBrightness}
-        overlayOpacity={bgPrefs.overlayOpacity}
-      />
-
-      {/* Realistic Frontier Dust Motes in Ambient Light */}
-      <DustMotes enabled={true} />
-
-      {/* Interactive Rain Particle System Canvas */}
-      <RainBackground enabled={bgPrefs.rainEnabled} />
+      {/* Procedural Canvas & CSS Brick Wall Background (Suppressed on Landing Page for Cinematic Desert Vista) */}
+      {!isLandingPage && (
+        <>
+          <BrickBackground
+            brightnessLevel={bgPrefs.brickBrightness}
+            overlayOpacity={bgPrefs.overlayOpacity}
+          />
+          <DustMotes enabled={true} />
+          <RainBackground enabled={bgPrefs.rainEnabled} />
+        </>
+      )}
 
       {/* Sticky Paper Header */}
       <Header bgPrefs={bgPrefs} />

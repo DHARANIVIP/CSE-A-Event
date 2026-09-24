@@ -4,6 +4,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Tile } from "@/components/ui/Tile";
 import { StatusBanner } from "@/components/ui/StatusBanner";
 import { CaseDossier } from "@/components/home/CaseDossier";
+import { CinematicDesertBackground } from "@/components/background/CinematicDesertBackground";
 import {
   CaseFolder,
   Rulebook,
@@ -33,14 +34,18 @@ export default async function HomePage() {
   const someoneSolved = mockDB.submissions.some((s) => s.is_correct);
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8 py-2 sm:py-4">
-      {/* 1. Main Hero Command Header */}
-      <section className="flex flex-col items-center justify-center space-y-3 sm:space-y-4 text-center">
+    <>
+      {/* 3D Cinematic Panoramic Desert Vista & Ambient Simulation */}
+      <CinematicDesertBackground />
+
+      <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8 py-2 sm:py-4 relative z-10">
+        {/* 1. Main Hero Command Header */}
+        <section className="flex flex-col items-center justify-center space-y-3 sm:space-y-4 text-center">
         {/* Main Logo Lockup */}
         <Logo />
 
         {/* Inspector Irratino Quote Block */}
-        <div className="max-w-2xl sm:max-w-3xl w-full px-4 py-2 text-left border-l-4 border-crimson bg-cream/80 rounded-r shadow-hard-sm backdrop-blur-sm">
+        <div className="max-w-2xl sm:max-w-3xl w-full px-5 py-3 text-left border-l-4 border-crimson bg-[#fcf7ee]/95 border-y border-r border-[#d8c8b0] rounded-r shadow-hard-sm">
           <p className="font-mono italic text-xs text-ink leading-relaxed">
             &ldquo;{eventConfig.inspectorQuote}&rdquo;
           </p>
@@ -76,7 +81,6 @@ export default async function HomePage() {
             <Tile href="/case" label="CASE FILES" icon={<CaseFolder />} id="tile-case-files" />
             <Tile href="/rules" label="RULES" icon={<Rulebook />} id="tile-rules" />
             <Tile href="/box" label="MYSTERY BOX" icon={<ChestIcon />} id="tile-box" />
-            <Tile href="/leaderboard" label="LEADERBOARD" icon={<Trophy />} id="tile-leaderboard" />
             <Tile href="/about" label="ABOUT" icon={<BadgeIcon />} id="tile-about" />
           </div>
 
@@ -122,5 +126,6 @@ export default async function HomePage() {
         </Link>
       </section>
     </div>
+  </>
   );
 }

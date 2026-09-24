@@ -6,8 +6,10 @@ import { usePathname } from "next/navigation";
 import { Logo } from "../brand/Logo";
 import { TeamBadge } from "../brand/TeamBadge";
 import { BackgroundPreferences } from "../background/useBackgroundPrefs";
-import { LogoutIcon } from "../icons";
+import { LogoutIcon, SoundIcon } from "../icons";
 import { LeaderboardModal } from "../case/LeaderboardModal";
+import { soundManager } from "../sound/SoundManager";
+import { desertAudio } from "../sound/DesertAudioAmbience";
 
 interface HeaderProps {
   bgPrefs: BackgroundPreferences;
@@ -18,6 +20,32 @@ export const Header: React.FC<HeaderProps> = () => {
   const [team, setTeam] = useState<{ id: string; name: string } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [isAudioMuted, setIsAudioMuted] = useState(true);
+
+  // Sync mute state on mount and listen to changes
+  useEffect(() => {
+    setIsAudioMuted(soundManager.getIsMuted());
+    const unsubSound = soundManager.subscribe((muted) => setIsAudioMuted(muted));
+    const unsubDesert = desertAudio.subscribe((muted) => setIsAudioMuted(muted));
+
+    // Listen for custom trigger to open leaderboard side drawer
+    const handleOpenLeaderboard = () => setIsLeaderboardOpen(true);
+    window.addEventListener("open-leaderboard", handleOpenLeaderboard);
+
+    // Auto-open if query param ?leaderboard=open is in the URL on /case
+    if (typeof window !== "undefined" && pathname === "/case") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("leaderboard") === "open" || params.get("leaderboard") === "true") {
+        setIsLeaderboardOpen(true);
+      }
+    }
+
+    return () => {
+      unsubSound();
+      unsubDesert();
+      window.removeEventListener("open-leaderboard", handleOpenLeaderboard);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     // Check if team is logged in via /api/me
@@ -45,6 +73,11 @@ export const Header: React.FC<HeaderProps> = () => {
     } catch {
       // ignore
     }
+  };
+
+  const handleToggleSound = () => {
+    const updated = desertAudio.toggleMute();
+    setIsAudioMuted(updated);
   };
 
   const navLinks = [
@@ -83,17 +116,36 @@ export const Header: React.FC<HeaderProps> = () => {
           })}
         </nav>
 
-        {/* Right: Controls, Leaderboard Button, Team Badge & Separate Logout Button */}
+        {/* Right: Controls, Leaderboard Button (CASE FILE PAGE ONLY), Audio Toggle, Team Badge & Logout */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Leaderboard Overlay Button */}
+          {/* Universal Sound Audio Toggle */}
           <button
-            onClick={() => setIsLeaderboardOpen(true)}
-            className="px-2.5 sm:px-3 py-1.5 bg-cream border-2 border-ink rounded font-mono text-xs font-bold text-ink uppercase tracking-wider shadow-hard-sm hover:text-crimson hover:-translate-y-0.5 hover:shadow-hard active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 select-none"
-            title="View Live Leaderboard"
+            onClick={handleToggleSound}
+            className={`px-2.5 sm:px-3 py-1.5 border-2 border-ink rounded font-mono text-xs font-bold uppercase tracking-wider shadow-hard-sm transition-all flex items-center gap-1.5 select-none active:translate-y-0.5 active:shadow-none ${
+              isAudioMuted
+                ? "bg-cream text-muted hover:text-ink hover:bg-paper"
+                : "bg-paper text-emerald-800 border-ink hover:bg-cream"
+            }`}
+            title={isAudioMuted ? "Audio Muted: Click to Enable Sound" : "Audio Active: Click to Mute Sound"}
+            aria-label={isAudioMuted ? "Unmute site audio" : "Mute site audio"}
           >
-            <span className="text-brass">🏆</span>
-            <span className="hidden sm:inline">LEADERBOARD</span>
+            <SoundIcon size={16} muted={isAudioMuted} />
+            <span className="hidden sm:inline">
+              {isAudioMuted ? "SOUND: OFF" : "SOUND: ON"}
+            </span>
           </button>
+
+          {/* LEADERBOARD BUTTON - ONLY SHOWN ON THE CASE FILE PAGE (/case) */}
+          {pathname === "/case" && (
+            <button
+              onClick={() => setIsLeaderboardOpen(true)}
+              className="px-2.5 sm:px-3 py-1.5 bg-gold/20 hover:bg-gold/35 border-2 border-ink rounded font-mono text-xs font-bold text-ink uppercase tracking-wider shadow-hard-sm hover:text-crimson hover:-translate-y-0.5 hover:shadow-hard active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 select-none"
+              title="View Live Leaderboard (Sidebar)"
+            >
+              <span className="text-amber-800">🏆</span>
+              <span className="hidden sm:inline">LEADERBOARD</span>
+            </button>
+          )}
 
           {/* Team Info Panel */}
           <div className="hidden sm:block">
@@ -161,10 +213,24 @@ export const Header: React.FC<HeaderProps> = () => {
               </Link>
             ))}
           </div>
+
+          {/* Mobile Leaderboard Button - CASE FILES PAGE ONLY */}
+          {pathname === "/case" && (
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setIsLeaderboardOpen(true);
+              }}
+              className="w-full py-2 bg-gold/25 border-2 border-ink rounded text-ink font-bold flex items-center justify-center gap-2"
+            >
+              <span>🏆</span>
+              <span>VIEW LEADERBOARD SIDEBAR</span>
+            </button>
+          )}
         </div>
       )}
 
-      {/* Live Leaderboard Modal Overlay */}
+      {/* Live Leaderboard Side-Drawer Overlay (Displayed exclusively when on /case) */}
       <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
