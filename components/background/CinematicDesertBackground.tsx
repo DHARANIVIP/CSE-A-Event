@@ -64,10 +64,14 @@ export const CinematicDesertBackground: React.FC = () => {
   const [isCameraPaused, setIsCameraPaused] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Sync audio state with desertAudio singleton
+  // Sync audio state with desertAudio singleton and trigger auto-play on entry
   useEffect(() => {
     setIsMounted(true);
     setIsAudioMuted(desertAudio.getIsMuted());
+
+    // Automatically play the Cowboy Theme audio once upon entering the website
+    desertAudio.playOnceOnEntry();
+
     const unsubscribe = desertAudio.subscribe((muted) => {
       setIsAudioMuted(muted);
     });
