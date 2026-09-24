@@ -4,13 +4,13 @@ import { validateCSRF } from "@/lib/csrf";
 import { checkLoginRateLimit, recordLoginAttempt } from "@/lib/rate-limit";
 import { hashWithScrypt, timingSafeEqualString } from "@/lib/hash";
 import { signTeamToken, TEAM_COOKIE_NAME, TEAM_SESSION_TTL_SECONDS } from "@/lib/auth";
-import { mockDB } from "@/lib/supabase-server";
+import { mockDB, getSupabaseAdmin, isSupabaseConnected } from "@/lib/supabase-server";
 import { safeLog } from "@/lib/safe-log";
 
 const loginSchema = z
   .object({
-    teamId: z.string().min(3).max(12),
-    pin: z.string().regex(/^\d{6}$/, "PIN must be a 6-digit numeric string"),
+    teamId: z.string().min(2).max(25),
+    pin: z.string().min(4).max(100),
   })
   .strict();
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       {
         error: {
           code: "INVALID_REQUEST",
-          message: "Team ID and 6-digit PIN are required.",
+          message: "Team Identifier (or Register Number) and Password are required.",
         },
       },
       { status: 400 }
@@ -73,8 +73,51 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 5. Look up team in database
-  const team = mockDB.teams.get(normalizedTeamId);
+  // 5. Look up team in database (Live Supabase with mockDB fallback)
+  let team: {
+    id: string;
+    name: string;
+    members: string[];
+    pin_hash: string;
+    disabled: boolean;
+  } | null = null;
+
+  if (await isSupabaseConnected()) {
+    try {
+      const sb = getSupabaseAdmin();
+      // Look up by Team ID OR Leader Register Number
+      const { data, error } = await sb
+        .from("teams")
+        .select("id, name, members, pin_hash, disabled, leader_reg_no")
+        .or(`id.eq.${normalizedTeamId},leader_reg_no.eq.${normalizedTeamId}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        let parsedMembers: string[] = [];
+        if (Array.isArray(data.members)) {
+          parsedMembers = data.members.map((m: any) =>
+            typeof m === "string"
+              ? m
+              : m.name
+              ? `${m.name}${m.reg_no ? ` (${m.reg_no})` : ""}`
+              : String(m)
+          );
+        }
+        team = {
+          id: data.id,
+          name: data.name,
+          members: parsedMembers,
+          pin_hash: data.pin_hash,
+          disabled: Boolean(data.disabled),
+        };
+      }
+    } catch {
+      team = mockDB.teams.get(normalizedTeamId) || null;
+    }
+  } else {
+    team = mockDB.teams.get(normalizedTeamId) || null;
+  }
 
   // Constant-time execution: always perform scrypt hash verification (S8)
   const saltToUse = team ? team.pin_hash.split(":")[0] : "CONST_TIME_DUMMY_SALT_16B";

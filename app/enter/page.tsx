@@ -40,8 +40,8 @@ function EnterForm() {
     const cleanTeamId = teamId.trim().toUpperCase();
     const cleanPin = pin.trim();
 
-    if (!cleanTeamId || cleanPin.length !== 6) {
-      setErrorMsg("Please enter your Team ID and a 6-digit numeric PIN.");
+    if (!cleanTeamId || cleanPin.length < 4) {
+      setErrorMsg("Please enter your Team ID (or Leader Register No) and Password.");
       return;
     }
 
@@ -132,8 +132,8 @@ function EnterForm() {
         ) : (
           <form onSubmit={handleLogin} className="space-y-4">
             <InputBar
-              label="TEAM IDENTIFIER"
-              placeholder="e.g. TEAM-01"
+              label="TEAM ID OR LEADER REGISTER NUMBER"
+              placeholder="e.g. TEAM-01 or 12345678901"
               value={teamId}
               onChange={(e) => setTeamId(e.target.value.toUpperCase())}
               autoCapitalize="characters"
@@ -144,14 +144,11 @@ function EnterForm() {
 
             <div className="relative">
               <InputBar
-                label="6-DIGIT BADGE PIN"
-                placeholder="••••••"
+                label="TEAM PASSWORD / ACCESS PIN"
+                placeholder="Enter password chosen at registration"
                 type={showPin ? "text" : "password"}
-                inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength={6}
                 value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(e) => setPin(e.target.value)}
                 autoComplete="off"
                 required
               />

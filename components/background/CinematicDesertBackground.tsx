@@ -60,21 +60,15 @@ export const CinematicDesertBackground: React.FC = () => {
   const animFrameRef = useRef<number | null>(null);
 
   const [hazeActive, setHazeActive] = useState<boolean>(true);
-  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(true);
   const [isCameraPaused, setIsCameraPaused] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Sync audio state with desertAudio singleton and trigger auto-play on entry
+  // Trigger automatic single playback of Cowboy Theme on entering the website
   useEffect(() => {
     setIsMounted(true);
-    setIsAudioMuted(desertAudio.getIsMuted());
 
-    // Automatically play the Cowboy Theme audio once upon entering the website
+    // Automatically plays once on entry and stops automatically
     desertAudio.playOnceOnEntry();
-
-    const unsubscribe = desertAudio.subscribe((muted) => {
-      setIsAudioMuted(muted);
-    });
 
     // Dissolve dust haze over 3.2 seconds
     const timer = setTimeout(() => {
@@ -82,15 +76,8 @@ export const CinematicDesertBackground: React.FC = () => {
     }, 3200);
 
     return () => {
-      unsubscribe();
       clearTimeout(timer);
-      desertAudio.stop();
     };
-  }, []);
-
-  const toggleSound = useCallback(() => {
-    const newMuted = desertAudio.toggleMute();
-    setIsAudioMuted(newMuted);
   }, []);
 
   // Main Canvas animation loop for sand air animation, dust motes, stone ball, and tumbleweed
@@ -629,44 +616,12 @@ export const CinematicDesertBackground: React.FC = () => {
       </div>
 
       {/* ========================================================
-          4. AMBIENT AUDIO & VISUAL CONTROLS (Corner Control Deck)
+          4. CINEMATIC CAMERA CONTROLS (Corner Control Deck)
           ======================================================== */}
       <aside
-        aria-label="Cinematic background and ambience controls"
+        aria-label="Cinematic background controls"
         className="fixed bottom-4 right-4 z-30 flex items-center gap-2 select-none no-print"
       >
-        {/* Cowboy Theme & Desert Ambience Sound Toggle */}
-        <button
-          type="button"
-          onClick={toggleSound}
-          title={isAudioMuted ? "Play Cowboy Theme audio" : "Mute Cowboy Theme audio"}
-          aria-label={
-            isAudioMuted
-              ? "Play Cowboy Theme background audio"
-              : "Mute Cowboy Theme background audio"
-          }
-          className="flex items-center gap-2 px-3 py-1.5 bg-[#fbf5e8]/95 hover:bg-[#ebdcc4] border-2 border-[#1a1410] rounded font-mono text-xs font-black text-[#1a1410] shadow-sm transition-all active:translate-y-0.5 pointer-events-auto"
-        >
-          {isAudioMuted ? (
-            <>
-              <span className="text-crimson">🔇</span>
-              <span className="hidden sm:inline">COWBOY THEME:</span>
-              <span className="text-muted">MUTED</span>
-            </>
-          ) : (
-            <>
-              <span className="text-crimson">🤠</span>
-              <span className="hidden sm:inline">COWBOY THEME:</span>
-              <span className="text-emerald-700">ACTIVE</span>
-              <span className="flex items-end gap-0.5 h-3 ml-0.5" aria-hidden="true">
-                <span className="w-1 bg-crimson rounded-full animate-bounce h-2" />
-                <span className="w-1 bg-crimson rounded-full animate-bounce [animation-delay:0.15s] h-3" />
-                <span className="w-1 bg-crimson rounded-full animate-bounce [animation-delay:0.3s] h-2.5" />
-              </span>
-            </>
-          )}
-        </button>
-
         {/* Camera glide status chip */}
         <button
           type="button"
