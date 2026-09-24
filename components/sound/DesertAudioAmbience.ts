@@ -1,6 +1,6 @@
 // Cinematic Desert & Cowboy Theme Audio Engine
 // Features the iconic western cowboy theme soundtrack from YouTube (YHbizE2_Ngk)
-// with procedural desert wind gusts and weathered saloon wood creaks.
+// Plays automatically ONCE on entering the website, then stops automatically when completed.
 
 import { soundManager } from "./SoundManager";
 
@@ -8,6 +8,7 @@ class DesertAudioAmbience {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = true;
   private isRunning: boolean = false;
+  private isPlayingEntryAudio: boolean = false;
 
   // Background Soundtrack Audio Element
   private themeAudio: HTMLAudioElement | null = null;
@@ -29,29 +30,7 @@ class DesertAudioAmbience {
 
   constructor() {
     if (typeof window !== "undefined") {
-      const stored =
-        localStorage.getItem("mb_desert_audio_muted") ||
-        localStorage.getItem("mb_sound_muted");
-      if (stored !== null) {
-        this.isMuted = stored === "true";
-      }
-
-      // Initialize soundtrack element
       this.initThemeAudio();
-
-      // Autoplay unlock on first user gesture if unmuted
-      const unlockSoundtrack = () => {
-        if (!this.isMuted && this.themeAudio && this.themeAudio.paused) {
-          this.themeAudio.play().catch(() => {});
-        }
-        window.removeEventListener("click", unlockSoundtrack);
-        window.removeEventListener("keydown", unlockSoundtrack);
-        window.removeEventListener("touchstart", unlockSoundtrack);
-      };
-
-      window.addEventListener("click", unlockSoundtrack, { passive: true });
-      window.addEventListener("keydown", unlockSoundtrack, { passive: true });
-      window.addEventListener("touchstart", unlockSoundtrack, { passive: true });
     }
   }
 
@@ -69,7 +48,7 @@ class DesertAudioAmbience {
     if (!this.themeAudio) {
       try {
         const audio = new Audio();
-        audio.loop = true;
+        audio.loop = false; // Only play once per user specification
         audio.preload = "auto";
 
         // Prioritize webm (Opus), fallback to m4a (AAC)
@@ -79,7 +58,7 @@ class DesertAudioAmbience {
           audio.src = "/audio/cowboy-theme.m4a";
         }
 
-        audio.volume = this.isMuted ? 0 : 0.72;
+        audio.volume = 0.75;
         this.themeAudio = audio;
       } catch {
         // Fallback for SSR
@@ -104,7 +83,7 @@ class DesertAudioAmbience {
     return this.ctx;
   }
 
-  // Generates dual-channel rich pink noise buffer for warm desert atmospheric wind
+  // Dual-channel rich pink noise buffer for warm desert atmospheric wind
   private createPinkNoiseBuffer(ctx: AudioContext, seconds: number = 4): AudioBuffer {
     const bufferSize = ctx.sampleRate * seconds;
     const buffer = ctx.createBuffer(2, bufferSize, ctx.sampleRate);
@@ -129,27 +108,76 @@ class DesertAudioAmbience {
     return buffer;
   }
 
-  public start(): void {
-    if (this.isRunning) return;
-    this.isRunning = true;
+  // Automatically plays the background soundtrack once upon entering the website, then stops automatically
+  public playOnceOnEntry(): void {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("mb_entry_audio_played")) return;
 
-    // 1. Start the Cowboy Theme Soundtrack
     const audio = this.initThemeAudio();
-    if (audio && !this.isMuted) {
-      audio.volume = 0.72;
-      audio.play().catch(() => {});
-    }
+    if (!audio) return;
 
-    // 2. Start subtle procedural wind and saloon creaks
+    audio.loop = false; // Only once
+    audio.volume = 0.75;
+
+    // Automatically stop when the audio track finishes
+    audio.onended = () => {
+      this.stop();
+      this.isPlayingEntryAudio = false;
+      this.isMuted = true;
+      this.notify();
+    };
+
+    const startAudio = () => {
+      audio
+        .play()
+        .then(() => {
+          sessionStorage.setItem("mb_entry_audio_played", "true");
+          this.isPlayingEntryAudio = true;
+          this.isMuted = false;
+          this.startProceduralAmbience();
+          this.notify();
+        })
+        .catch(() => {
+          // If browser policy prevents instant autoplay without user gesture,
+          // automatically start on the very first touch/click/scroll upon entering
+          const onFirstInteraction = () => {
+            if (!sessionStorage.getItem("mb_entry_audio_played") && this.themeAudio) {
+              this.themeAudio
+                .play()
+                .then(() => {
+                  sessionStorage.setItem("mb_entry_audio_played", "true");
+                  this.isPlayingEntryAudio = true;
+                  this.isMuted = false;
+                  this.startProceduralAmbience();
+                  this.notify();
+                })
+                .catch(() => {});
+            }
+            window.removeEventListener("pointerdown", onFirstInteraction);
+            window.removeEventListener("click", onFirstInteraction);
+            window.removeEventListener("keydown", onFirstInteraction);
+            window.removeEventListener("touchstart", onFirstInteraction);
+          };
+
+          window.addEventListener("pointerdown", onFirstInteraction, { once: true, passive: true });
+          window.addEventListener("click", onFirstInteraction, { once: true, passive: true });
+          window.addEventListener("keydown", onFirstInteraction, { once: true, passive: true });
+          window.addEventListener("touchstart", onFirstInteraction, { once: true, passive: true });
+        });
+    };
+
+    startAudio();
+  }
+
+  private startProceduralAmbience(): void {
+    if (this.isRunning) return;
     const ctx = this.getContext();
     if (!ctx) return;
 
+    this.isRunning = true;
     this.masterGain = ctx.createGain();
-    const targetGain = this.isMuted ? 0.0001 : 0.45;
     this.masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    if (!this.isMuted) {
-      this.masterGain.gain.linearRampToValueAtTime(targetGain, ctx.currentTime + 1.2);
-    }
+    this.masterGain.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 1.2);
     this.masterGain.connect(ctx.destination);
 
     // Procedural Desert Wind Loop
@@ -186,6 +214,22 @@ class DesertAudioAmbience {
     this.windSource.start();
 
     this.scheduleWoodCreak();
+  }
+
+  public start(): void {
+    const audio = this.initThemeAudio();
+    if (audio) {
+      audio.currentTime = 0;
+      audio.loop = false;
+      audio.volume = 0.75;
+      audio.onended = () => {
+        this.stop();
+        this.isMuted = true;
+        this.notify();
+      };
+      audio.play().catch(() => {});
+    }
+    this.startProceduralAmbience();
   }
 
   private scheduleWoodCreak(): void {
@@ -232,7 +276,6 @@ class DesertAudioAmbience {
     }
   }
 
-  // Stone Ball rolling friction sound
   public playRollingStoneStep(): void {
     const ctx = this.getContext();
     if (!ctx || !this.masterGain || this.isMuted) return;
@@ -259,10 +302,6 @@ class DesertAudioAmbience {
   }
 
   public stop(): void {
-    if (!this.isRunning) return;
-    this.isRunning = false;
-
-    // Pause soundtrack
     if (this.themeAudio) {
       this.themeAudio.pause();
     }
@@ -294,8 +333,9 @@ class DesertAudioAmbience {
           this.lfo = null;
         }
       } catch {
-        // Already stopped
+        // Safe exit
       }
+      this.isRunning = false;
     }, 600);
   }
 
@@ -303,43 +343,43 @@ class DesertAudioAmbience {
     const ctx = this.getContext();
     this.isMuted = !this.isMuted;
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("mb_desert_audio_muted", String(this.isMuted));
-      localStorage.setItem("mb_sound_muted", String(this.isMuted));
-    }
-
-    // Sync soundManager mute state
     soundManager.setMuted(this.isMuted);
 
     if (ctx && ctx.state === "suspended") {
       ctx.resume().catch(() => {});
     }
 
-    if (!this.isRunning) {
-      this.start();
-    }
-
-    // Handle Cowboy Theme Soundtrack
     const audio = this.initThemeAudio();
     if (audio) {
       if (this.isMuted) {
         audio.pause();
       } else {
-        audio.volume = 0.72;
+        audio.currentTime = 0;
+        audio.loop = false;
+        audio.volume = 0.75;
+        audio.onended = () => {
+          this.stop();
+          this.isMuted = true;
+          this.notify();
+        };
         audio.play().catch(() => {});
       }
     }
 
-    // Handle procedural ambient gain
-    if (ctx && this.masterGain) {
-      if (this.isMuted) {
+    if (this.isMuted) {
+      if (ctx && this.masterGain) {
         this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, ctx.currentTime);
         this.masterGain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
-      } else {
+      }
+    } else {
+      if (!this.isRunning) {
+        this.startProceduralAmbience();
+      }
+      if (ctx && this.masterGain) {
         this.masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
         this.masterGain.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 0.8);
-        soundManager.playUnmuteCue();
       }
+      soundManager.playUnmuteCue();
     }
 
     this.notify();
@@ -351,7 +391,7 @@ class DesertAudioAmbience {
   }
 
   public getIsRunning(): boolean {
-    return this.isRunning;
+    return this.isRunning || (this.themeAudio ? !this.themeAudio.paused : false);
   }
 }
 
