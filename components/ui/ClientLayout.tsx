@@ -11,11 +11,17 @@ import { SkipLink } from "./SkipLink";
 import { eventConfig } from "@/config/event.config";
 
 import { usePathname } from "next/navigation";
+import { desertAudio } from "../sound/DesertAudioAmbience";
 
 export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const bgPrefs = useBackgroundPrefs();
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
+
+  // Automatically play music once upon newly entering the website
+  React.useEffect(() => {
+    desertAudio.playOnceOnEntry();
+  }, []);
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between overflow-x-hidden">

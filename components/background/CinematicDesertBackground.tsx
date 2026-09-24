@@ -77,7 +77,6 @@ export const CinematicDesertBackground: React.FC = () => {
 
     return () => {
       clearTimeout(timer);
-      desertAudio.stop();
     };
   }, []);
 

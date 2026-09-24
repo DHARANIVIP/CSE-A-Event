@@ -47,18 +47,16 @@ class DesertAudioAmbience {
     if (typeof window === "undefined") return null;
     if (!this.themeAudio) {
       try {
-        const audio = new Audio();
-        audio.loop = false; // Only play once per user specification
-        audio.preload = "auto";
-
-        // Prioritize webm (Opus), fallback to m4a (AAC)
-        if (audio.canPlayType('audio/webm; codecs="opus"')) {
-          audio.src = "/audio/cowboy-theme.webm";
-        } else {
-          audio.src = "/audio/cowboy-theme.m4a";
+        let audio = document.getElementById("mysterybox-cowboy-audio") as HTMLAudioElement;
+        if (!audio) {
+          audio = document.createElement("audio");
+          audio.id = "mysterybox-cowboy-audio";
+          audio.loop = false; // Only play once per user specification
+          audio.preload = "auto";
+          audio.src = "/audio/cowboy-theme.mp3";
+          audio.volume = 0.85;
+          document.body.appendChild(audio);
         }
-
-        audio.volume = 0.75;
         this.themeAudio = audio;
       } catch {
         // Fallback for SSR
@@ -111,62 +109,79 @@ class DesertAudioAmbience {
   // Automatically plays the background soundtrack once upon entering the website, then stops automatically
   public playOnceOnEntry(): void {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem("mb_entry_audio_played")) return;
+
+    // Purge any stale legacy lock keys from previous attempts
+    try {
+      sessionStorage.removeItem("mb_entry_audio_played");
+    } catch {}
+
+    // Only skip if the audio track has already completed full playback in this session
+    if (sessionStorage.getItem("mb_entry_audio_completed") === "true") {
+      return;
+    }
+
+    if (this.isPlayingEntryAudio) {
+      return;
+    }
 
     const audio = this.initThemeAudio();
     if (!audio) return;
 
     audio.loop = false; // Only once
-    audio.volume = 0.75;
+    audio.volume = 0.85;
 
-    // Automatically stop when the audio track finishes
+    // Automatically stop when the audio track finishes and record completed state
     audio.onended = () => {
-      this.stop();
       this.isPlayingEntryAudio = false;
       this.isMuted = true;
+      try {
+        sessionStorage.setItem("mb_entry_audio_completed", "true");
+      } catch {}
+      this.stop();
       this.notify();
     };
 
-    const startAudio = () => {
-      audio
-        .play()
-        .then(() => {
-          sessionStorage.setItem("mb_entry_audio_played", "true");
-          this.isPlayingEntryAudio = true;
-          this.isMuted = false;
-          this.startProceduralAmbience();
-          this.notify();
-        })
-        .catch(() => {
-          // If browser policy prevents instant autoplay without user gesture,
-          // automatically start on the very first touch/click/scroll upon entering
-          const onFirstInteraction = () => {
-            if (!sessionStorage.getItem("mb_entry_audio_played") && this.themeAudio) {
-              this.themeAudio
-                .play()
-                .then(() => {
-                  sessionStorage.setItem("mb_entry_audio_played", "true");
-                  this.isPlayingEntryAudio = true;
-                  this.isMuted = false;
-                  this.startProceduralAmbience();
-                  this.notify();
-                })
-                .catch(() => {});
-            }
-            window.removeEventListener("pointerdown", onFirstInteraction);
-            window.removeEventListener("click", onFirstInteraction);
-            window.removeEventListener("keydown", onFirstInteraction);
-            window.removeEventListener("touchstart", onFirstInteraction);
-          };
+    const tryStart = async () => {
+      if (sessionStorage.getItem("mb_entry_audio_completed") === "true") return;
+      try {
+        await audio.play();
+        this.isPlayingEntryAudio = true;
+        this.isMuted = false;
+        this.notify();
+      } catch {
+        // If browser autoplay policy prevents instant sound without user gesture,
+        // unlock and start playing on the very first touch/click/press anywhere on screen
+        const events = ["pointerdown", "click", "keydown", "touchstart", "scroll"];
+        const unlockAndPlay = () => {
+          if (sessionStorage.getItem("mb_entry_audio_completed") === "true") {
+            events.forEach((ev) => {
+              window.removeEventListener(ev, unlockAndPlay);
+              document.removeEventListener(ev, unlockAndPlay);
+            });
+            return;
+          }
+          audio
+            .play()
+            .then(() => {
+              this.isPlayingEntryAudio = true;
+              this.isMuted = false;
+              this.notify();
+              events.forEach((ev) => {
+                window.removeEventListener(ev, unlockAndPlay);
+                document.removeEventListener(ev, unlockAndPlay);
+              });
+            })
+            .catch(() => {});
+        };
 
-          window.addEventListener("pointerdown", onFirstInteraction, { once: true, passive: true });
-          window.addEventListener("click", onFirstInteraction, { once: true, passive: true });
-          window.addEventListener("keydown", onFirstInteraction, { once: true, passive: true });
-          window.addEventListener("touchstart", onFirstInteraction, { once: true, passive: true });
+        events.forEach((ev) => {
+          window.addEventListener(ev, unlockAndPlay, { passive: true });
+          document.addEventListener(ev, unlockAndPlay, { passive: true });
         });
+      }
     };
 
-    startAudio();
+    tryStart();
   }
 
   private startProceduralAmbience(): void {
