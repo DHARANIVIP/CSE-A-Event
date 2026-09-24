@@ -631,28 +631,28 @@ export const CinematicDesertBackground: React.FC = () => {
         aria-label="Cinematic background and ambience controls"
         className="fixed bottom-4 right-4 z-30 flex items-center gap-2 select-none no-print"
       >
-        {/* Procedural Desert Ambience Sound Toggle */}
+        {/* Cowboy Theme & Desert Ambience Sound Toggle */}
         <button
           type="button"
           onClick={toggleSound}
-          title={isAudioMuted ? "Turn on procedural desert audio" : "Mute procedural desert audio"}
+          title={isAudioMuted ? "Play Cowboy Theme audio" : "Mute Cowboy Theme audio"}
           aria-label={
             isAudioMuted
-              ? "Turn on procedural desert audio ambience"
-              : "Mute procedural desert audio ambience"
+              ? "Play Cowboy Theme background audio"
+              : "Mute Cowboy Theme background audio"
           }
           className="flex items-center gap-2 px-3 py-1.5 bg-[#fbf5e8]/95 hover:bg-[#ebdcc4] border-2 border-[#1a1410] rounded font-mono text-xs font-black text-[#1a1410] shadow-sm transition-all active:translate-y-0.5 pointer-events-auto"
         >
           {isAudioMuted ? (
             <>
               <span className="text-crimson">🔇</span>
-              <span className="hidden sm:inline">DESERT SOUND:</span>
+              <span className="hidden sm:inline">COWBOY THEME:</span>
               <span className="text-muted">MUTED</span>
             </>
           ) : (
             <>
-              <span className="text-crimson">🏜️</span>
-              <span className="hidden sm:inline">DESERT AMBIENCE:</span>
+              <span className="text-crimson">🤠</span>
+              <span className="hidden sm:inline">COWBOY THEME:</span>
               <span className="text-emerald-700">ACTIVE</span>
               <span className="flex items-end gap-0.5 h-3 ml-0.5" aria-hidden="true">
                 <span className="w-1 bg-crimson rounded-full animate-bounce h-2" />
