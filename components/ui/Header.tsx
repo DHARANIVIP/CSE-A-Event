@@ -6,10 +6,8 @@ import { usePathname } from "next/navigation";
 import { Logo } from "../brand/Logo";
 import { TeamBadge } from "../brand/TeamBadge";
 import { BackgroundPreferences } from "../background/useBackgroundPrefs";
-import { LogoutIcon, SoundIcon } from "../icons";
+import { LogoutIcon } from "../icons";
 import { LeaderboardModal } from "../case/LeaderboardModal";
-import { soundManager } from "../sound/SoundManager";
-import { desertAudio } from "../sound/DesertAudioAmbience";
 
 interface HeaderProps {
   bgPrefs: BackgroundPreferences;
@@ -20,14 +18,8 @@ export const Header: React.FC<HeaderProps> = () => {
   const [team, setTeam] = useState<{ id: string; name: string } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
-  const [isAudioMuted, setIsAudioMuted] = useState(true);
 
-  // Sync mute state on mount and listen to changes
   useEffect(() => {
-    setIsAudioMuted(soundManager.getIsMuted());
-    const unsubSound = soundManager.subscribe((muted) => setIsAudioMuted(muted));
-    const unsubDesert = desertAudio.subscribe((muted) => setIsAudioMuted(muted));
-
     // Listen for custom trigger to open leaderboard side drawer
     const handleOpenLeaderboard = () => setIsLeaderboardOpen(true);
     window.addEventListener("open-leaderboard", handleOpenLeaderboard);
@@ -41,8 +33,6 @@ export const Header: React.FC<HeaderProps> = () => {
     }
 
     return () => {
-      unsubSound();
-      unsubDesert();
       window.removeEventListener("open-leaderboard", handleOpenLeaderboard);
     };
   }, [pathname]);
@@ -73,11 +63,6 @@ export const Header: React.FC<HeaderProps> = () => {
     } catch {
       // ignore
     }
-  };
-
-  const handleToggleSound = () => {
-    const updated = desertAudio.toggleMute();
-    setIsAudioMuted(updated);
   };
 
   const navLinks = [
@@ -116,24 +101,8 @@ export const Header: React.FC<HeaderProps> = () => {
           })}
         </nav>
 
-        {/* Right: Controls, Leaderboard Button (CASE FILE PAGE ONLY), Audio Toggle, Team Badge & Logout */}
+        {/* Right: Controls, Leaderboard Button (CASE FILE PAGE ONLY), Team Badge & Logout */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Universal Sound Audio Toggle */}
-          <button
-            onClick={handleToggleSound}
-            className={`px-2.5 sm:px-3 py-1.5 border-2 border-ink rounded font-mono text-xs font-bold uppercase tracking-wider shadow-hard-sm transition-all flex items-center gap-1.5 select-none active:translate-y-0.5 active:shadow-none ${
-              isAudioMuted
-                ? "bg-cream text-muted hover:text-ink hover:bg-paper"
-                : "bg-paper text-emerald-800 border-ink hover:bg-cream"
-            }`}
-            title={isAudioMuted ? "Audio Muted: Click to Enable Sound" : "Audio Active: Click to Mute Sound"}
-            aria-label={isAudioMuted ? "Unmute site audio" : "Mute site audio"}
-          >
-            <SoundIcon size={16} muted={isAudioMuted} />
-            <span className="hidden sm:inline">
-              {isAudioMuted ? "SOUND: OFF" : "SOUND: ON"}
-            </span>
-          </button>
 
           {/* LEADERBOARD BUTTON - ONLY SHOWN ON THE CASE FILE PAGE (/case) */}
           {pathname === "/case" && (

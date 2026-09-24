@@ -7,17 +7,24 @@
 -- 1. Enable Cryptographic Extensions
 create extension if not exists pgcrypto;
 
--- 2. TEAMS TABLE (Stores team credentials, members, and scrypt PIN hashes)
+-- 2. TEAMS TABLE (Stores team credentials, leader details, members, and scrypt password hashes)
 create table if not exists public.teams (
-  id            text primary key check (id ~ '^[A-Z0-9-]{3,20}$'),
-  name          text not null check (char_length(name) between 2 and 60),
-  members       text[] not null default '{}',
-  pin_hash      text not null,
-  disabled      boolean not null default false,
-  created_at    timestamptz not null default clock_timestamp()
+  id              text primary key check (id ~ '^[A-Z0-9-]{3,25}$'), -- e.g. DTX-01, TEAM-01
+  name            text not null check (char_length(name) between 2 and 60), -- Team Name
+  leader_name     text not null default '',
+  leader_reg_no   text not null default '',
+  leader_email    text default '',
+  leader_mobile   text default '',
+  leader_gender   text default '',
+  leader_section  text default '',
+  members         jsonb not null default '[]', -- Array of [{ name: "...", reg_no: "..." }]
+  pin_hash        text not null, -- scrypt hash of the team password (format salt:hash)
+  disabled        boolean not null default false,
+  created_at      timestamptz not null default clock_timestamp()
 );
 
--- Index for quick team lookup
+-- Fast lookup indexes: allows sign in with either Team ID OR Leader Register Number
+create index if not exists idx_teams_leader_reg_no on public.teams(leader_reg_no);
 create index if not exists idx_teams_disabled on public.teams(disabled);
 
 -- 3. EVENT STATE TABLE (Single row singleton controlling competition status)
