@@ -29,6 +29,7 @@ class DesertAudioAmbience {
   private sixSecondTimer: ReturnType<typeof setTimeout> | null = null;
   private fadeInterval: ReturnType<typeof setInterval> | null = null;
   private hasPlayedOnScroll: boolean = false;
+  private hasInitiatedScrollPlayback: boolean = false;
 
   // Listeners for UI state reactivity
   private listeners: Set<(muted: boolean) => void> = new Set();
@@ -61,6 +62,9 @@ class DesertAudioAmbience {
           audio.src = "/audio/cowboy-theme.mp3";
           audio.volume = 0.85;
           document.body.appendChild(audio);
+          try {
+            audio.load();
+          } catch {}
         }
         this.themeAudio = audio;
       } catch {
@@ -121,22 +125,18 @@ class DesertAudioAmbience {
       sessionStorage.removeItem("mb_entry_audio_completed");
     } catch {}
 
-    // Enforce one-time-only playback
-    if (this.hasPlayedOnScroll) return;
+    // Enforce strictly one execution
+    if (this.hasInitiatedScrollPlayback || this.hasPlayedOnScroll) return;
     try {
       if (sessionStorage.getItem("mb_landing_scroll_played") === "true") {
         return;
       }
     } catch {}
 
+    this.hasInitiatedScrollPlayback = true;
+
     const audio = this.initThemeAudio();
     if (!audio) return;
-
-    // Mark as played so no other scroll or event can trigger it again
-    this.hasPlayedOnScroll = true;
-    try {
-      sessionStorage.setItem("mb_landing_scroll_played", "true");
-    } catch {}
 
     // Reset previous playback timers if any
     if (this.sixSecondTimer) {
@@ -179,30 +179,54 @@ class DesertAudioAmbience {
       stopPlayback();
     };
 
+    const startPlaybackTimer = () => {
+      this.hasPlayedOnScroll = true;
+      try {
+        sessionStorage.setItem("mb_landing_scroll_played", "true");
+      } catch {}
+      this.isPlayingEntryAudio = true;
+      this.isMuted = false;
+      this.notify();
+
+      const startTime = Date.now();
+      // Gentle volume fade during the final 800ms before 6.0 seconds (spaced at 80ms for zero lag)
+      this.fadeInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= FADE_START_MS && elapsed < DURATION_MS) {
+          const factor = Math.max(0, 1 - (elapsed - FADE_START_MS) / (DURATION_MS - FADE_START_MS));
+          audio.volume = Math.max(0, Math.min(0.85, 0.85 * factor));
+        }
+      }, 80);
+
+      // Strictly stop playback after 6 seconds
+      this.sixSecondTimer = setTimeout(() => {
+        stopPlayback();
+      }, DURATION_MS);
+    };
+
     audio
       .play()
       .then(() => {
-        this.isPlayingEntryAudio = true;
-        this.isMuted = false;
-        this.notify();
-
-        const startTime = Date.now();
-        // Gentle volume fade during the final 800ms before 6.0 seconds
-        this.fadeInterval = setInterval(() => {
-          const elapsed = Date.now() - startTime;
-          if (elapsed >= FADE_START_MS && elapsed < DURATION_MS) {
-            const factor = Math.max(0, 1 - (elapsed - FADE_START_MS) / (DURATION_MS - FADE_START_MS));
-            audio.volume = Math.max(0, Math.min(0.85, 0.85 * factor));
-          }
-        }, 40);
-
-        // Strictly stop playback after 6 seconds
-        this.sixSecondTimer = setTimeout(() => {
-          stopPlayback();
-        }, DURATION_MS);
+        startPlaybackTimer();
       })
-      .catch((err) => {
-        console.warn("Audio scroll playback policy:", err);
+      .catch(() => {
+        // Browser Autoplay Policy requires a user gesture before unmuted media can play.
+        // Listen once for the user's very first interaction on the landing page, then immediately start the 6-second soundtrack.
+        const events = ["pointerdown", "click", "touchstart", "keydown"];
+        const unlockAndPlay = () => {
+          events.forEach((ev) => window.removeEventListener(ev, unlockAndPlay, true));
+          if (this.hasPlayedOnScroll) return;
+          audio
+            .play()
+            .then(() => {
+              startPlaybackTimer();
+            })
+            .catch(() => {});
+        };
+
+        events.forEach((ev) => {
+          window.addEventListener(ev, unlockAndPlay, { once: true, passive: true, capture: true });
+        });
       });
   }
 

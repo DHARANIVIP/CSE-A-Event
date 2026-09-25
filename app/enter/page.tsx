@@ -37,11 +37,11 @@ function EnterForm() {
     setErrorMsg(null);
     setRetryAfter(null);
 
-    const cleanTeamId = teamId.trim().toUpperCase();
+    const cleanIdentifier = teamId.trim();
     const cleanPin = pin.trim();
 
-    if (!cleanTeamId || cleanPin.length < 4) {
-      setErrorMsg("Please enter your Team ID (or Leader Register No) and Password.");
+    if (!cleanIdentifier || cleanPin.length < 4) {
+      setErrorMsg("Please enter your Student Roll No (or Email / Team ID) and Password.");
       return;
     }
 
@@ -51,7 +51,7 @@ function EnterForm() {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId: cleanTeamId, pin: cleanPin }),
+        body: JSON.stringify({ teamId: cleanIdentifier, pin: cleanPin }),
       });
 
       const data = await res.json();
@@ -93,7 +93,7 @@ function EnterForm() {
             INVESTIGATOR ACCESS
           </h1>
           <p className="font-mono text-xs text-muted mt-1 uppercase tracking-wider">
-            Enter the credentials printed on your team badge
+            Enter your student Roll No / Email ID and assigned password
           </p>
         </div>
 
@@ -132,11 +132,11 @@ function EnterForm() {
         ) : (
           <form onSubmit={handleLogin} className="space-y-4">
             <InputBar
-              label="TEAM ID OR LEADER REGISTER NUMBER"
-              placeholder="e.g. TEAM-01 or 12345678901"
+              label="STUDENT ROLL NO, EMAIL ID, OR TEAM ID"
+              placeholder="e.g. 12345678901, student@ksrce.ac.in, or DTX-01"
               value={teamId}
-              onChange={(e) => setTeamId(e.target.value.toUpperCase())}
-              autoCapitalize="characters"
+              onChange={(e) => setTeamId(e.target.value)}
+              autoCapitalize="none"
               autoComplete="off"
               spellCheck={false}
               required
@@ -144,8 +144,8 @@ function EnterForm() {
 
             <div className="relative">
               <InputBar
-                label="TEAM PASSWORD / ACCESS PIN"
-                placeholder="Enter password chosen at registration"
+                label="PASSWORD"
+                placeholder="Enter password assigned to your account"
                 type={showPin ? "text" : "password"}
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}

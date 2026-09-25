@@ -67,19 +67,24 @@ export const CinematicDesertBackground: React.FC = () => {
   useEffect(() => {
     setIsMounted(true);
 
+    let scrollHandled = false;
     const onUserScroll = (e?: Event) => {
+      if (scrollHandled) return;
+
       // If triggered by wheel, ensure there is actual delta displacement
       if (e && e.type === "wheel") {
         const wheelEv = e as WheelEvent;
         if (Math.abs(wheelEv.deltaY) < 1 && Math.abs(wheelEv.deltaX) < 1) return;
       }
 
-      desertAudio.playSixSecondsOnScroll();
+      scrollHandled = true;
 
-      // Immediately detach all scroll listeners so it cannot be triggered again
+      // Immediately detach all scroll listeners so it cannot be triggered again or cause lag
       window.removeEventListener("scroll", onUserScroll);
       window.removeEventListener("wheel", onUserScroll);
       window.removeEventListener("touchmove", onUserScroll);
+
+      desertAudio.playSixSecondsOnScroll();
     };
 
     window.addEventListener("scroll", onUserScroll, { passive: true });
