@@ -3,10 +3,19 @@
 -- Run this in your Supabase Dashboard: SQL Editor -> Run
 -- =========================================================================
 
--- Ensure index on email and reg_no for instant login queries
+-- 1. Ensure table has all required columns (adds columns if table was created with older schema)
+alter table public.teams add column if not exists leader_name text not null default '';
+alter table public.teams add column if not exists leader_reg_no text not null default '';
+alter table public.teams add column if not exists leader_email text default '';
+alter table public.teams add column if not exists leader_mobile text default '';
+alter table public.teams add column if not exists leader_gender text default '';
+alter table public.teams add column if not exists leader_section text default '';
+
+-- 2. Ensure index on email and reg_no for instant login queries
 create index if not exists idx_teams_leader_reg_no on public.teams(leader_reg_no);
 create index if not exists idx_teams_leader_email on public.teams(leader_email);
 
+-- 3. Insert / update all 25 teams
 insert into public.teams (
   id,
   name,
