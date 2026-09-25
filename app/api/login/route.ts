@@ -9,7 +9,7 @@ import { safeLog } from "@/lib/safe-log";
 
 const loginSchema = z
   .object({
-    teamId: z.string().min(2).max(25),
+    teamId: z.string().min(2).max(100),
     pin: z.string().min(4).max(100),
   })
   .strict();
@@ -34,14 +34,15 @@ export async function POST(req: NextRequest) {
       {
         error: {
           code: "INVALID_REQUEST",
-          message: "Team Identifier (or Register Number) and Password are required.",
+          message: "Student Roll No (or Email / Team ID) and Password are required.",
         },
       },
       { status: 400 }
     );
   }
 
-  const normalizedTeamId = body.teamId.toUpperCase().trim();
+  const rawIdentifier = body.teamId.trim();
+  const normalizedTeamId = rawIdentifier.toUpperCase();
   const teamScope = `team:${normalizedTeamId}`;
 
   // 4. Rate Limiting Check (5 attempts / 5 min per IP + Team ID, S8)
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
       {
         error: {
           code: "RATE_LIMITED",
-          message: `Too many login attempts for this team. Try again in ${teamLimit.retryAfterSeconds}s.`,
+          message: `Too many login attempts for this account. Try again in ${teamLimit.retryAfterSeconds}s.`,
           retryAfterSeconds: teamLimit.retryAfterSeconds,
         },
       },
@@ -85,13 +86,27 @@ export async function POST(req: NextRequest) {
   if (await isSupabaseConnected()) {
     try {
       const sb = getSupabaseAdmin();
-      // Look up by Team ID OR Leader Register Number
-      const { data, error } = await sb
+      // Look up by Team ID, Leader Register No / Roll No, or Leader Email
+      let { data, error } = await sb
         .from("teams")
-        .select("id, name, members, pin_hash, disabled, leader_reg_no")
-        .or(`id.eq.${normalizedTeamId},leader_reg_no.eq.${normalizedTeamId}`)
+        .select("id, name, members, pin_hash, disabled, leader_reg_no, leader_email")
+        .or(`id.eq.${normalizedTeamId},leader_reg_no.eq.${rawIdentifier},leader_email.ilike.${rawIdentifier}`)
         .limit(1)
         .maybeSingle();
+
+      // If not found yet, check if any squad member's register number matches
+      if (!data) {
+        const { data: memberTeam } = await sb
+          .from("teams")
+          .select("id, name, members, pin_hash, disabled, leader_reg_no, leader_email")
+          .filter("members::text", "ilike", `%"${rawIdentifier}"%`)
+          .limit(1)
+          .maybeSingle();
+
+        if (memberTeam) {
+          data = memberTeam;
+        }
+      }
 
       if (!error && data) {
         let parsedMembers: string[] = [];
@@ -113,10 +128,24 @@ export async function POST(req: NextRequest) {
         };
       }
     } catch {
-      team = mockDB.teams.get(normalizedTeamId) || null;
+      team = null;
     }
-  } else {
-    team = mockDB.teams.get(normalizedTeamId) || null;
+  }
+
+  // Fallback to mockDB if not found or offline
+  if (!team) {
+    for (const t of mockDB.teams.values()) {
+      const idMatch = t.id.toUpperCase() === normalizedTeamId;
+      const regMatch = (t as any).leader_reg_no === rawIdentifier;
+      const emailMatch = (t as any).leader_email?.toLowerCase() === rawIdentifier.toLowerCase();
+      const memberMatch = Array.isArray(t.members) && t.members.some((m: any) =>
+        typeof m === "string" ? m.includes(rawIdentifier) : m.reg_no === rawIdentifier
+      );
+      if (idMatch || regMatch || emailMatch || memberMatch) {
+        team = t;
+        break;
+      }
+    }
   }
 
   // Constant-time execution: always perform scrypt hash verification (S8)
