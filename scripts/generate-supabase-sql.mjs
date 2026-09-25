@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 
-const content = fs.readFileSync(path.resolve(process.cwd(), "content/student-credentials-distribution.csv"), "utf-8");
+const content = fs.readFileSync(path.resolve(process.cwd(), "teams-credentials-export.csv"), "utf-8");
 const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0).slice(1);
 const salt = "TEST_SALT_16_BYTES_ABC";
 
@@ -16,8 +16,8 @@ const values = lines.map((l) => {
   const matches = [...l.matchAll(/"([^"]*)"/g)].map((m) => m[1]);
   const [teamId, teamName, name, regNo, email, pass] = matches;
   const pinHash = hash(pass);
-  const membersJson = JSON.stringify([{ role: "Leader", name: name, reg_no: regNo }]);
-  return `  ('${teamId}', '${teamName.replace(/'/g, "''")}', '${name.replace(/'/g, "''")}', '${regNo}', '${email.replace(/'/g, "''")}', '${membersJson.replace(/'/g, "''")}'::jsonb, '${pinHash}', false)`;
+  const memberStr = `${name} (${regNo})`;
+  return `  ('${teamId}', '${teamName.replace(/'/g, "''")}', '${name.replace(/'/g, "''")}', '${regNo}', '${email.replace(/'/g, "''")}', ARRAY['${memberStr.replace(/'/g, "''")}']::text[], '${pinHash}', false)`;
 });
 
 const sql = `-- =========================================================================
@@ -25,10 +25,19 @@ const sql = `-- ================================================================
 -- Run this in your Supabase Dashboard: SQL Editor -> Run
 -- =========================================================================
 
--- Ensure index on email and reg_no for instant login queries
+-- 1. Ensure table has all required columns
+alter table public.teams add column if not exists leader_name text not null default '';
+alter table public.teams add column if not exists leader_reg_no text not null default '';
+alter table public.teams add column if not exists leader_email text default '';
+alter table public.teams add column if not exists leader_mobile text default '';
+alter table public.teams add column if not exists leader_gender text default '';
+alter table public.teams add column if not exists leader_section text default '';
+
+-- 2. Fast lookup indexes for Roll No & Email logins
 create index if not exists idx_teams_leader_reg_no on public.teams(leader_reg_no);
 create index if not exists idx_teams_leader_email on public.teams(leader_email);
 
+-- 3. Insert / update all 25 teams (members as text[])
 insert into public.teams (
   id,
   name,
@@ -49,9 +58,9 @@ on conflict (id) do update set
   pin_hash = excluded.pin_hash,
   disabled = excluded.disabled;
 
--- Confirmation
-select count(*) as seeded_teams_count from public.teams;
+-- 4. Confirm total teams in database
+select count(*) as total_teams_seeded from public.teams;
 `;
 
 fs.writeFileSync(path.resolve(process.cwd(), "supabase/seed-students.sql"), sql, "utf-8");
-console.log("Generated supabase/seed-students.sql with 25 student teams!");
+console.log("Regenerated supabase/seed-students.sql using text[] for members!");

@@ -51,7 +51,7 @@ if (!supabaseKey || supabaseKey.includes("test_service") || supabaseKey.includes
       leader_name: name,
       leader_reg_no: regNo,
       leader_email: email,
-      members: [{ role: "Leader", name: name, reg_no: regNo }],
+      members: [`${name} (${regNo})`],
       pin_hash: hash(pass),
       disabled: false,
     };
