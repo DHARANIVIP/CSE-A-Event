@@ -25,6 +25,11 @@ class DesertAudioAmbience {
   // Wood Creak Timer
   private woodCreakTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // 6-Second Scroll Audio Playback Controls
+  private sixSecondTimer: ReturnType<typeof setTimeout> | null = null;
+  private fadeInterval: ReturnType<typeof setInterval> | null = null;
+  private hasPlayedOnScroll: boolean = false;
+
   // Listeners for UI state reactivity
   private listeners: Set<(muted: boolean) => void> = new Set();
 
@@ -106,82 +111,104 @@ class DesertAudioAmbience {
     return buffer;
   }
 
-  // Automatically plays the background soundtrack once upon entering the website, then stops automatically
-  public playOnceOnEntry(): void {
+  // Plays soundtrack strictly ONE TIME for 6 SECONDS ONLY when user scrolls the landing page
+  public playSixSecondsOnScroll(): void {
     if (typeof window === "undefined") return;
 
-    // Purge any stale legacy lock keys from previous attempts
+    // Purge legacy lock keys
     try {
       sessionStorage.removeItem("mb_entry_audio_played");
+      sessionStorage.removeItem("mb_entry_audio_completed");
     } catch {}
 
-    // Only skip if the audio track has already completed full playback in this session
-    if (sessionStorage.getItem("mb_entry_audio_completed") === "true") {
-      return;
-    }
-
-    if (this.isPlayingEntryAudio) {
-      return;
-    }
+    // Enforce one-time-only playback
+    if (this.hasPlayedOnScroll) return;
+    try {
+      if (sessionStorage.getItem("mb_landing_scroll_played") === "true") {
+        return;
+      }
+    } catch {}
 
     const audio = this.initThemeAudio();
     if (!audio) return;
 
-    audio.loop = false; // Only once
-    audio.volume = 0.85;
+    // Mark as played so no other scroll or event can trigger it again
+    this.hasPlayedOnScroll = true;
+    try {
+      sessionStorage.setItem("mb_landing_scroll_played", "true");
+    } catch {}
 
-    // Automatically stop when the audio track finishes and record completed state
-    audio.onended = () => {
+    // Reset previous playback timers if any
+    if (this.sixSecondTimer) {
+      clearTimeout(this.sixSecondTimer);
+      this.sixSecondTimer = null;
+    }
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = null;
+    }
+
+    audio.loop = false;
+    audio.volume = 0.85;
+    audio.currentTime = 0;
+
+    const DURATION_MS = 6000;
+    const FADE_START_MS = 5200;
+
+    const stopPlayback = () => {
+      if (this.sixSecondTimer) {
+        clearTimeout(this.sixSecondTimer);
+        this.sixSecondTimer = null;
+      }
+      if (this.fadeInterval) {
+        clearInterval(this.fadeInterval);
+        this.fadeInterval = null;
+      }
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 0.85;
+      } catch {}
       this.isPlayingEntryAudio = false;
       this.isMuted = true;
-      try {
-        sessionStorage.setItem("mb_entry_audio_completed", "true");
-      } catch {}
       this.stop();
       this.notify();
     };
 
-    const tryStart = async () => {
-      if (sessionStorage.getItem("mb_entry_audio_completed") === "true") return;
-      try {
-        await audio.play();
+    audio.onended = () => {
+      stopPlayback();
+    };
+
+    audio
+      .play()
+      .then(() => {
         this.isPlayingEntryAudio = true;
         this.isMuted = false;
         this.notify();
-      } catch {
-        // If browser autoplay policy prevents instant sound without user gesture,
-        // unlock and start playing on the very first touch/click/press anywhere on screen
-        const events = ["pointerdown", "click", "keydown", "touchstart", "scroll"];
-        const unlockAndPlay = () => {
-          if (sessionStorage.getItem("mb_entry_audio_completed") === "true") {
-            events.forEach((ev) => {
-              window.removeEventListener(ev, unlockAndPlay);
-              document.removeEventListener(ev, unlockAndPlay);
-            });
-            return;
+
+        const startTime = Date.now();
+        // Gentle volume fade during the final 800ms before 6.0 seconds
+        this.fadeInterval = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          if (elapsed >= FADE_START_MS && elapsed < DURATION_MS) {
+            const factor = Math.max(0, 1 - (elapsed - FADE_START_MS) / (DURATION_MS - FADE_START_MS));
+            audio.volume = Math.max(0, Math.min(0.85, 0.85 * factor));
           }
-          audio
-            .play()
-            .then(() => {
-              this.isPlayingEntryAudio = true;
-              this.isMuted = false;
-              this.notify();
-              events.forEach((ev) => {
-                window.removeEventListener(ev, unlockAndPlay);
-                document.removeEventListener(ev, unlockAndPlay);
-              });
-            })
-            .catch(() => {});
-        };
+        }, 40);
 
-        events.forEach((ev) => {
-          window.addEventListener(ev, unlockAndPlay, { passive: true });
-          document.addEventListener(ev, unlockAndPlay, { passive: true });
-        });
-      }
-    };
+        // Strictly stop playback after 6 seconds
+        this.sixSecondTimer = setTimeout(() => {
+          stopPlayback();
+        }, DURATION_MS);
+      })
+      .catch((err) => {
+        console.warn("Audio scroll playback policy:", err);
+      });
+  }
 
-    tryStart();
+  // Deprecated legacy alias kept for compatibility; no-op so entry/click does not trigger audio
+  public playOnceOnEntry(): void {
+    // Deliberately no-op: audio only plays on scroll per user instruction
   }
 
   private startProceduralAmbience(): void {
@@ -317,6 +344,15 @@ class DesertAudioAmbience {
   }
 
   public stop(): void {
+    if (this.sixSecondTimer) {
+      clearTimeout(this.sixSecondTimer);
+      this.sixSecondTimer = null;
+    }
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = null;
+    }
+
     if (this.themeAudio) {
       this.themeAudio.pause();
     }
