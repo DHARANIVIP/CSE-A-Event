@@ -2,87 +2,34 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // ============================================================================
-// 1. CONFIGURATION & CONSTANTS (Easily editable for future hackathons / links)
+// 1. CONFIGURATION & CONSTANTS
 // ============================================================================
 
 /**
- * Configure your external or internal redirect link here.
- * Defaults to the main landing page ("/"), but can be set to any internal or external URL
- * (e.g. "https://...", "/case", "/enter").
+ * Target destination URL after clicking Play / Open Case.
+ * Defaults to the main landing page ("/"), but can be any internal or external URL.
  */
 export const EXTERNAL_REDIRECT_LINK: string = "/";
-
-export interface CaseExhibit {
-  number: string;
-  subtitle: string;
-  propDescription: string;
-  revealText: string;
-  tagline: string;
-  backgroundImage: string;
-  isMonogramMorph?: boolean;
-}
 
 export const DETECTRIX_INTRO_CONFIG = {
   caseFileNumber: "CASE FILE № 2K26",
   titleLine1: "THE",
   titleLine2: "DETECTRIX FILE",
+  tagline: "Investigate. Connect. Decode. Unlock.",
+  department: "DEPARTMENT OF CSE",
+  venue: "KSRCE CAMPUS",
+  duration: "6HRS MYSTERY WORLD",
+  bounty: "SPECIAL GIFTS & CASH BOUNTY",
   audioSrc: "/audio/cowboy-theme.mp3",
-  exhibits: [
-    {
-      number: "01",
-      subtitle: "THE CASE NAME",
-      propDescription: "vintage analog alarm clock on a desk, blurred books behind",
-      revealText: "DETECTRIX",
-      tagline: "Every case begins with a name.",
-      backgroundImage: "/assets/intro-scene-1.jpg",
-    },
-    {
-      number: "02",
-      subtitle: "SCENE OF THE CRIME",
-      propDescription: "crime-board collage: crumpled notebook pages, burnt/torn paper, red string, newspaper clippings",
-      revealText: "KSRCE",
-      tagline: "The place it all goes down.",
-      backgroundImage: "/assets/intro-scene-2.jpg",
-      isMonogramMorph: true,
-    },
-    {
-      number: "03",
-      subtitle: "THE TIME FRAME",
-      propDescription: "old radio/boombox on a table next to a drink glass",
-      revealText: "6HRS MYSTREY WORLD",
-      tagline: "One night. No second chances.",
-      backgroundImage: "/assets/intro-scene-3.jpg",
-    },
-    {
-      number: "04",
-      subtitle: "THE BOUNTY",
-      propDescription: "clock + an ornate wooden prize box",
-      revealText: "SPECIAL GIFTS !!!!",
-      tagline: "Motive enough for anyone.",
-      backgroundImage: "/assets/intro-scene-4.jpg",
-    },
-    {
-      number: "05",
-      subtitle: "THE BACKER",
-      propDescription: "dim tabletop with scattered mystery objects, low light",
-      revealText: '"CSE"',
-      tagline: "Someone's pulling the strings.",
-      backgroundImage: "/assets/intro-scene-5.jpg",
-    },
-  ] as CaseExhibit[],
-  finalCta: {
-    tag: "● CASE 2K26 — SOLVED",
-    headline: "CASE OPEN",
-    buttonText: "ENTER THE INVESTIGATION →",
-    replayText: "↺ REPLAY THE CASE",
-    backgroundImage: "/assets/intro-scene-2.jpg",
-  },
+  audioDurationMs: 12000, // Exactly 12 seconds per user instruction
+  backgroundImage: "/assets/intro-scene-2.jpg",
 };
 
 // ============================================================================
-// 2. DETECTIVE CASE INTRO COMPONENT
+// 2. DETECTIVE CASE INTRO COMPONENT (SINGLE PAGE EDITION)
 // ============================================================================
 
 interface DetectiveCaseIntroProps {
@@ -94,29 +41,29 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
   redirectUrl = EXTERNAL_REDIRECT_LINK,
   onEnterInvestigation,
 }) => {
-  // Scene index: 0 = Title Card, 1..5 = Exhibits, 6 = Final CTA Screen
-  const [currentScene, setCurrentScene] = useState<number>(0);
+  const router = useRouter();
+
+  const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
+  const [audioSecondsRemaining, setAudioSecondsRemaining] = useState<number>(12);
   const [isFlashing, setIsFlashing] = useState<boolean>(false);
-  const [monogramMorphed, setMonogramMorphed] = useState<boolean>(false);
-  const [taglineVisible, setTaglineVisible] = useState<boolean>(false);
+  const [isNavigating, setIsNavigating] = useState<boolean>(false);
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioFadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const exhibits = DETECTRIX_INTRO_CONFIG.exhibits;
-  const totalExhibits = exhibits.length; // 5
-
-  // Initialize or retrieve persistent audio element
+  // Persistent audio element mounted on document.body so client routing preserves playback
   const getOrCreateAudio = useCallback((): HTMLAudioElement | null => {
     if (typeof window === "undefined") return null;
     if (!audioRef.current) {
-      let audio = document.getElementById("detectrix-intro-theme-audio") as HTMLAudioElement;
+      let audio = document.getElementById("detectrix-cowboy-theme-audio") as HTMLAudioElement;
       if (!audio) {
         audio = document.createElement("audio");
-        audio.id = "detectrix-intro-theme-audio";
+        audio.id = "detectrix-cowboy-theme-audio";
         audio.src = DETECTRIX_INTRO_CONFIG.audioSrc;
         audio.preload = "auto";
-        audio.loop = true;
+        audio.loop = false;
         document.body.appendChild(audio);
       }
       audioRef.current = audio;
@@ -124,538 +71,438 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     return audioRef.current;
   }, []);
 
-  // Jump to specific scene
-  const goToScene = useCallback((nextIndex: number) => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    setTaglineVisible(false);
-    setMonogramMorphed(false);
-    setCurrentScene(nextIndex);
-  }, []);
-
-  // Exit trigger: screen flash + start music on user gesture + redirect
-  const handleExitFlow = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-
-    // 1. Trigger Screen-Flash Shutter Wipe
-    setIsFlashing(true);
-
-    // 2. Start Theme Music at exact click (User Gesture for browser autoplay compliance)
+  // Trigger 12-second background music playback
+  const startAudioPlayback = useCallback((): boolean => {
     const audio = getOrCreateAudio();
-    if (audio) {
-      try {
-        audio.currentTime = 0;
-        audio.volume = 0.8;
-        audio.play().catch(() => {
-          // Autoplay fallback
+    if (!audio) return false;
+
+    try {
+      audio.currentTime = 0;
+      audio.volume = 0.9;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn("Audio autoplay blocked or interrupted:", err);
         });
-      } catch {}
+      }
+    } catch (e) {
+      console.warn("Audio play exception:", e);
     }
 
-    // 3. Mark intro seen in sessionStorage
+    setIsPlayingAudio(true);
+    setAudioSecondsRemaining(12);
+
+    // 1-second countdown ticker
+    if (audioCountdownIntervalRef.current) {
+      clearInterval(audioCountdownIntervalRef.current);
+    }
+    audioCountdownIntervalRef.current = setInterval(() => {
+      setAudioSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          if (audioCountdownIntervalRef.current) {
+            clearInterval(audioCountdownIntervalRef.current);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Audio fade-out during the final 1.8 seconds of the 12s window
+    const FADE_START_MS = 10200;
+    setTimeout(() => {
+      if (audioFadeIntervalRef.current) clearInterval(audioFadeIntervalRef.current);
+      audioFadeIntervalRef.current = setInterval(() => {
+        if (audio && audio.volume > 0.08) {
+          audio.volume = Math.max(0, audio.volume - 0.12);
+        } else if (audio) {
+          audio.volume = 0;
+          if (audioFadeIntervalRef.current) clearInterval(audioFadeIntervalRef.current);
+        }
+      }, 150);
+    }, FADE_START_MS);
+
+    // Stop playback strictly at 12 seconds
+    if (audioStopTimerRef.current) clearTimeout(audioStopTimerRef.current);
+    audioStopTimerRef.current = setTimeout(() => {
+      try {
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = 0.9;
+        }
+      } catch {}
+      setIsPlayingAudio(false);
+      if (audioFadeIntervalRef.current) clearInterval(audioFadeIntervalRef.current);
+      if (audioCountdownIntervalRef.current) clearInterval(audioCountdownIntervalRef.current);
+    }, DETECTRIX_INTRO_CONFIG.audioDurationMs);
+
+    return true;
+  }, [getOrCreateAudio]);
+
+  // Handle Play Button Click: Starts background music + smoothly opens landing page
+  const handlePlayAndEnter = useCallback(() => {
+    if (isNavigating) return;
+
+    // 1. Start 12-second background music on this explicit user click gesture
+    startAudioPlayback();
+
+    // 2. Visual camera shutter flash wipe
+    setIsFlashing(true);
+    setIsNavigating(true);
+
     try {
       sessionStorage.setItem("introSeen", "true");
     } catch {}
 
-    // 4. Redirect after flash completes (~400ms)
+    // 3. Seamless Next.js client-side navigation preserves the playing audio element
     setTimeout(() => {
       if (onEnterInvestigation) {
         onEnterInvestigation();
-      } else {
+      } else if (redirectUrl.startsWith("http://") || redirectUrl.startsWith("https://")) {
         window.location.href = redirectUrl;
+      } else {
+        router.push(redirectUrl);
       }
-    }, 420);
-  }, [getOrCreateAudio, onEnterInvestigation, redirectUrl]);
+    }, 450);
+  }, [isNavigating, onEnterInvestigation, redirectUrl, router, startAudioPlayback]);
 
-  // Restart sequence from Scene 0
-  const handleReplay = useCallback((e: React.MouseEvent) => {
+  // Audio preview toggle (plays/stops sound without immediate redirect)
+  const handleToggleAudioOnly = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    goToScene(0);
-  }, [goToScene]);
+    const audio = getOrCreateAudio();
+    if (!audio) return;
 
-  // Check if intro has already been seen in this session (skip to Scene 6)
-  useEffect(() => {
+    if (isPlayingAudio) {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch {}
+      setIsPlayingAudio(false);
+      if (audioStopTimerRef.current) clearTimeout(audioStopTimerRef.current);
+      if (audioFadeIntervalRef.current) clearInterval(audioFadeIntervalRef.current);
+      if (audioCountdownIntervalRef.current) clearInterval(audioCountdownIntervalRef.current);
+    } else {
+      startAudioPlayback();
+    }
+  }, [getOrCreateAudio, isPlayingAudio, startAudioPlayback]);
+
+  // Direct bypass to landing page without audio
+  const handleDirectBypass = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isNavigating) return;
+    setIsFlashing(true);
+    setIsNavigating(true);
     try {
-      if (sessionStorage.getItem("introSeen") === "true") {
-        setCurrentScene(6);
-      }
+      sessionStorage.setItem("introSeen", "true");
     } catch {}
+    setTimeout(() => {
+      if (onEnterInvestigation) {
+        onEnterInvestigation();
+      } else if (redirectUrl.startsWith("http://") || redirectUrl.startsWith("https://")) {
+        window.location.href = redirectUrl;
+      } else {
+        router.push(redirectUrl);
+      }
+    }, 350);
+  }, [isNavigating, onEnterInvestigation, redirectUrl, router]);
+
+  // Keyboard accessibility: Space / Enter / Play trigger
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handlePlayAndEnter();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        handleDirectBypass();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleDirectBypass, handlePlayAndEnter]);
+
+  // Clean-up timers on unmount (keep audio playing on body until 12s expires)
+  useEffect(() => {
+    return () => {
+      if (audioCountdownIntervalRef.current) clearInterval(audioCountdownIntervalRef.current);
+    };
   }, []);
 
-  // Auto-advance scene timer loop
-  useEffect(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-
-    // Punch text in first, then tagline fades in a beat later
-    const taglineTimer = setTimeout(() => {
-      setTaglineVisible(true);
-    }, 380);
-
-    // Slide 2 monogram-to-text morph animation (holds ~0.5s then morphs)
-    if (currentScene === 2) {
-      const morphTimer = setTimeout(() => {
-        setMonogramMorphed(true);
-      }, 500);
-      return () => {
-        clearTimeout(taglineTimer);
-        clearTimeout(morphTimer);
-      };
-    }
-
-    // Scene durations
-    let duration = 3000;
-    if (currentScene === 0) {
-      duration = 3200; // Title card ~3.2s
-    } else if (currentScene >= 1 && currentScene <= 5) {
-      duration = 2800; // Exhibits ~2.8s each
-    } else if (currentScene === 6) {
-      // Scene 6: holds until user clicks
-      return () => {
-        clearTimeout(taglineTimer);
-      };
-    }
-
-    timerRef.current = setTimeout(() => {
-      if (currentScene < 6) {
-        goToScene(currentScene + 1);
-      }
-    }, duration);
-
-    return () => {
-      clearTimeout(taglineTimer);
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [currentScene, goToScene]);
-
-  // Keyboard navigation (Space/Right Arrow = next, Escape = skip)
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleExitFlow();
-      } else if (e.key === "ArrowRight" || e.key === " ") {
-        if (currentScene < 6) {
-          goToScene(currentScene + 1);
-        } else {
-          handleExitFlow();
-        }
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [currentScene, goToScene, handleExitFlow]);
-
-  // Current background determination
-  let currentBgImage = "/assets/intro-scene-0.jpg";
-  if (currentScene === 0) {
-    currentBgImage = "/assets/intro-scene-0.jpg";
-  } else if (currentScene >= 1 && currentScene <= totalExhibits) {
-    currentBgImage = exhibits[currentScene - 1].backgroundImage;
-  } else if (currentScene === 6) {
-    currentBgImage = DETECTRIX_INTRO_CONFIG.finalCta.backgroundImage;
-  }
-
-  // Active exhibit data
-  const activeExhibit: CaseExhibit | null =
-    currentScene >= 1 && currentScene <= totalExhibits ? exhibits[currentScene - 1] : null;
-
   return (
-    <div
-      onClick={() => {
-        if (currentScene < 6) {
-          goToScene(currentScene + 1);
-        }
-      }}
-      className="detectrix-intro-root fixed inset-0 z-[9999] overflow-hidden bg-black select-none cursor-pointer flex flex-col justify-between"
-      aria-label="Detective Case File Intro Sequence"
+    <main
+      id="detectrix-intro-container"
+      className="relative w-screen h-screen overflow-hidden bg-black text-[#f4ecd8] select-none flex flex-col justify-between"
+      style={{ isolation: "isolate" }}
+      aria-label="Detective Case File Introduction"
     >
       {/* ========================================================
-          1. CINEMATIC LETTERBOX BARS (Top & Bottom)
+          1. CINEMATIC FULL-BLEED BACKGROUND WITH SLOW DRIFT
           ======================================================== */}
-      <div className="absolute top-0 inset-x-0 h-4 sm:h-5 bg-[#09050c] z-40 border-b border-[#241a24]/50 pointer-events-none" />
-      <div className="absolute bottom-0 inset-x-0 h-4 sm:h-5 bg-[#09050c] z-40 border-t border-[#241a24]/50 pointer-events-none" />
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <Image
+          src={DETECTRIX_INTRO_CONFIG.backgroundImage}
+          alt="Detective Evidence Board Background"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center filter brightness-[0.38] contrast-[1.2] sepia-[0.35] scale-105 animate-[kenBurnsSubtle_25s_ease-in-out_infinite_alternate]"
+        />
 
-      {/* ========================================================
-          2. FULL-BLEED BACKGROUND WITH KEN-BURNS SLOW ZOOM
-          ======================================================== */}
-      <div key={`bg-${currentScene}`} className="absolute inset-0 overflow-hidden -z-10">
-        <div className="relative w-full h-full detectrix-ken-burns">
-          <Image
-            src={currentBgImage}
-            alt="Detective Case File Background"
-            fill
-            priority
-            sizes="100vw"
-            className={`object-cover object-center filter brightness-[0.80] contrast-[1.10] saturate-[0.85] ${
-              currentScene === 6 ? "brightness-[0.40] contrast-[1.20]" : ""
-            }`}
-          />
-        </div>
+        {/* Noir Atmosphere Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-black/85" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(0,0,0,0.85)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_20%,rgba(232,196,104,0.12),transparent_70%)]" />
+        <div className="detectrix-scanlines absolute inset-0 pointer-events-none opacity-20" />
+        <div className="detectrix-grain absolute inset-0 pointer-events-none opacity-25" />
       </div>
 
-      {/* ========================================================
-          3. NOIR POST-PROCESSING ATMOSPHERIC LAYERS
-          Near-black background, warm amber/sepia highlights,
-          heavy vignette, film grain, scan-lines, top light-leak
-          ======================================================== */}
-      {/* Heavy Perimeter Vignette */}
-      <div
-        className="absolute inset-0 pointer-events-none -z-5"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(10, 7, 5, 0.20) 25%, rgba(12, 8, 6, 0.75) 65%, rgba(4, 3, 2, 0.98) 100%)",
-        }}
-      />
-
-      {/* Warm Amber / Sepia Atmospheric Wash */}
-      <div
-        className="absolute inset-0 pointer-events-none -z-5 opacity-40 mix-blend-color"
-        style={{
-          background: "linear-gradient(135deg, #e8c468 0%, #ab7b49 50%, #4a2d18 100%)",
-        }}
-      />
-
-      {/* Soft Diagonal Light Leak Sweeping Across Top of Frame */}
-      <div
-        className="absolute top-0 inset-x-0 h-[45vh] pointer-events-none -z-5 opacity-35"
-        style={{
-          background:
-            "linear-gradient(145deg, rgba(240, 200, 120, 0.22) 0%, rgba(220, 160, 80, 0.08) 35%, transparent 60%)",
-          mixBlendMode: "screen",
-        }}
-      />
-
-      {/* Film Grain Texture */}
-      <div className="absolute inset-0 detectrix-grain pointer-events-none -z-4 opacity-35" />
-
-      {/* Faint Horizontal Scan-Lines */}
-      <div className="absolute inset-0 detectrix-scanlines pointer-events-none -z-4 opacity-25" />
-
-      {/* ========================================================
-          4. PERSISTENT HUD OVERLAY (Every Screen)
-          ======================================================== */}
-      <header className="relative z-30 pt-6 sm:pt-7 px-5 sm:px-8 flex items-center justify-between pointer-events-none">
-        {/* Top-Left: CASE FILE № 2K26 */}
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-[#e8c468] rounded-full shadow-[0_0_8px_#e8c468]" />
-          <span className="detectrix-hud-font text-[11px] sm:text-xs tracking-widest text-[#e8c468]/90 font-bold uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-            {DETECTRIX_INTRO_CONFIG.caseFileNumber}
-          </span>
-        </div>
-
-        {/* Top-Right: Pulsing Red REC Indicator (1s cycle) */}
-        <div className="flex items-center gap-2 detectrix-hud-font text-[11px] sm:text-xs tracking-widest text-red-500 font-bold uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_10px_#ef4444]" />
-          <span>REC</span>
-        </div>
-      </header>
-
-      {/* ========================================================
-          5. MAIN SCENE CONTENT STAGE
-          ======================================================== */}
-      <main className="relative z-20 flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-8 max-w-5xl mx-auto w-full">
-        {/* SCENE 0: Opening Title Card (~3s) */}
-        {currentScene === 0 && (
-          <div key="scene-0" className="space-y-4 sm:space-y-6">
-            <div className="detectrix-vhs-reveal">
-              <span className="block detectrix-hud-font text-xs sm:text-sm tracking-[0.35em] text-[#e8c468]/80 font-bold uppercase mb-2">
-                CLASSIFIED CASE FILE
-              </span>
-              <h1 className="detectrix-display-font text-5xl sm:text-7xl md:text-8xl lg:text-9xl detectrix-gold-glow-lg font-black tracking-wider leading-none">
-                {DETECTRIX_INTRO_CONFIG.titleLine1} {DETECTRIX_INTRO_CONFIG.titleLine2}
-              </h1>
-            </div>
-            <p className="detectrix-caption-font text-amber-100/80 text-sm sm:text-base md:text-lg italic tracking-wide max-w-md mx-auto drop-shadow-md">
-              Every mystery leaves a trail.
-            </p>
-          </div>
-        )}
-
-        {/* SCENES 1–5: Exhibit Sequence */}
-        {activeExhibit && (
-          <div key={`scene-${currentScene}`} className="w-full space-y-4 sm:space-y-6">
-            {/* Small Centered Monospace Caption Stack */}
-            <div className="space-y-1.5">
-              <div className="inline-block px-3 py-1 bg-black/65 border border-[#e8c468]/45 rounded-sm shadow-sm backdrop-blur-sm">
-                <span className="detectrix-hud-font text-xs sm:text-sm tracking-[0.25em] text-[#e8c468] font-bold uppercase">
-                  EXHIBIT № {activeExhibit.number}
-                </span>
-              </div>
-              <h2 className="detectrix-hud-font text-xs sm:text-sm tracking-[0.2em] text-[#e8c468]/80 font-semibold uppercase">
-                {activeExhibit.subtitle}
-              </h2>
-            </div>
-
-            {/* Big Display-Font Word / Phrase (Glow-Pulse + Scale-up) */}
-            <div className="min-h-[100px] sm:min-h-[140px] md:min-h-[180px] flex items-center justify-center">
-              {activeExhibit.isMonogramMorph ? (
-                // Exhibit 02: Monogram icon fades in ~0.5s then morphs to KSRCE
-                <div className="relative flex items-center justify-center">
-                  {!monogramMorphed ? (
-                    <div className="w-20 h-20 sm:w-28 sm:h-28 border-2 border-[#e8c468] rotate-45 flex items-center justify-center bg-black/75 shadow-[0_0_30px_rgba(232,196,104,0.6)] animate-pulse">
-                      <span className="-rotate-45 detectrix-display-font text-3xl sm:text-4xl text-[#e8c468] font-black">
-                        K
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="detectrix-punch-in">
-                      <h3 className="detectrix-display-font text-6xl sm:text-8xl md:text-9xl lg:text-[10.5rem] detectrix-gold-glow-lg font-black tracking-wider leading-none">
-                        {activeExhibit.revealText}
-                      </h3>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="detectrix-punch-in">
-                  <h3 className="detectrix-display-font text-5xl sm:text-7xl md:text-8xl lg:text-[9.5rem] detectrix-gold-glow-lg font-black tracking-wider leading-none">
-                    {activeExhibit.revealText}
-                  </h3>
-                </div>
-              )}
-            </div>
-
-            {/* Elegant Italic Serif Tagline (fades in a beat later) */}
-            <div
-              className={`transition-all duration-700 ease-out transform ${
-                taglineVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-              }`}
-            >
-              <p className="detectrix-caption-font text-amber-100/90 text-base sm:text-xl md:text-2xl italic tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] max-w-lg mx-auto">
-                &ldquo;{activeExhibit.tagline}&rdquo;
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* SCENE 6: Final CTA Screen (The LAST screen of this build) */}
-        {currentScene === 6 && (
-          <div key="scene-6" className="space-y-6 sm:space-y-8 detectrix-vhs-reveal">
-            {/* Small red tag line with bullet */}
-            <div className="flex items-center justify-center gap-2">
-              <span className="detectrix-hud-font text-xs sm:text-sm tracking-[0.25em] text-red-500 font-bold uppercase drop-shadow-[0_0_8px_rgba(239,68,68,0.7)]">
-                {DETECTRIX_INTRO_CONFIG.finalCta.tag}
-              </span>
-            </div>
-
-            {/* Giant glowing display headline: CASE OPEN */}
-            <h1 className="detectrix-display-font text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] detectrix-gold-glow-lg font-black tracking-wider leading-none">
-              {DETECTRIX_INTRO_CONFIG.finalCta.headline}
-            </h1>
-
-            {/* Bordered, glowing gold outline button: ENTER THE INVESTIGATION → */}
-            <div className="pt-2 sm:pt-4">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleExitFlow();
-                }}
-                className="group relative inline-flex items-center justify-center px-8 sm:px-12 py-4 sm:py-5 border-2 border-[#e8c468] bg-black/80 hover:bg-[#e8c468] text-[#e8c468] hover:text-[#120d08] detectrix-display-font text-2xl sm:text-3xl md:text-4xl tracking-wider rounded transition-all duration-300 shadow-[0_0_24px_rgba(232,196,104,0.45)] hover:shadow-[0_0_48px_rgba(232,196,104,0.85)] hover:scale-[1.03] cursor-pointer"
-              >
-                <span>{DETECTRIX_INTRO_CONFIG.finalCta.buttonText}</span>
-              </button>
-            </div>
-
-            {/* Small muted link: REPLAY THE CASE */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={handleReplay}
-                className="detectrix-hud-font text-xs sm:text-sm text-[#e8c468]/60 hover:text-[#e8c468] tracking-widest uppercase underline decoration-1 hover:decoration-[#e8c468] transition-colors cursor-pointer"
-              >
-                {DETECTRIX_INTRO_CONFIG.finalCta.replayText}
-              </button>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* ========================================================
-          6. HUD FOOTER & PROGRESS INDICATORS
-          ======================================================== */}
-      <footer className="relative z-30 pb-6 sm:pb-7 px-5 sm:px-8 flex items-center justify-between">
-        {/* Left: Keyboard Navigation Hint */}
-        <div className="hidden sm:block">
-          <span className="detectrix-hud-font text-[10px] text-[#e8c468]/40 tracking-wider">
-            [CLICK / SPACE] ADVANCE · [ESC] SKIP
-          </span>
-        </div>
-
-        {/* Center: 5 Small Dot Indicators showing progress */}
-        <div className="flex items-center gap-2.5">
-          {exhibits.map((_, idx) => {
-            const exhibitIndex = idx + 1;
-            const isActive = currentScene === exhibitIndex;
-            const isPassed = currentScene > exhibitIndex;
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goToScene(exhibitIndex);
-                }}
-                title={`Exhibit 0${idx + 1}`}
-                aria-label={`Jump to Exhibit 0${idx + 1}`}
-                className={`transition-all duration-300 rounded-full cursor-pointer ${
-                  isActive
-                    ? "w-3 h-3 bg-[#e8c468] shadow-[0_0_12px_#e8c468]"
-                    : isPassed
-                    ? "w-2.5 h-2.5 bg-[#e8c468]/50"
-                    : "w-2.5 h-2.5 border border-[#e8c468]/40 bg-transparent"
-                }`}
-              />
-            );
-          })}
-        </div>
-
-        {/* Right: SKIP INTRO » Button */}
-        <div className="flex items-center">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleExitFlow();
-            }}
-            className="detectrix-hud-font text-xs sm:text-sm font-bold tracking-widest text-[#e8c468]/85 hover:text-[#e8c468] hover:drop-shadow-[0_0_8px_#e8c468] uppercase transition-all px-3 py-1.5 bg-black/50 hover:bg-black/85 border border-[#e8c468]/35 hover:border-[#e8c468] rounded-sm cursor-pointer"
-          >
-            SKIP INTRO »
-          </button>
-        </div>
-      </footer>
-
-      {/* ========================================================
-          7. SHUTTER FLASH OVERLAY (Triggers on Exit Click)
-          ======================================================== */}
+      {/* Camera Shutter Flash on Entry */}
       {isFlashing && (
         <div
-          className="fixed inset-0 z-50 pointer-events-none detectrix-shutter-flash"
+          className="detectrix-shutter-flash absolute inset-0 z-50 pointer-events-none"
           aria-hidden="true"
         />
       )}
 
+      {/* Cinematic 3px Letterbox Borders */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#0c0814] z-40 border-b border-[#e8c468]/20" />
+      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#0c0814] z-40 border-t border-[#e8c468]/20" />
+
       {/* ========================================================
-          8. SELF-CONTAINED STYLES & FONTS
-          Guarantees zero dependency on altering existing website styles
+          2. TOP HUD: CLASSIFIED STATUS & DIRECT ACCESS
+          ======================================================== */}
+      <header className="relative z-30 pt-4 sm:pt-6 px-4 sm:px-8 flex items-center justify-between">
+        {/* Left: Case ID Badge */}
+        <div className="flex items-center gap-2.5">
+          <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+          <span className="w-2 h-2 rounded-full bg-red-500 -ml-[18px]" />
+          <span className="detectrix-hud-font text-xs sm:text-sm tracking-widest text-[#e8c468]/90 font-bold uppercase">
+            {DETECTRIX_INTRO_CONFIG.caseFileNumber} // CLASSIFIED BRIEFING
+          </span>
+        </div>
+
+        {/* Right: Audio Indicator & Skip Button */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Audio Status Pill */}
+          <div
+            className={`hidden sm:flex items-center gap-2 px-3 py-1 rounded border text-[11px] font-mono tracking-wider transition-all ${
+              isPlayingAudio
+                ? "bg-[#e8c468]/15 border-[#e8c468] text-[#e8c468]"
+                : "bg-black/60 border-zinc-800 text-zinc-400"
+            }`}
+          >
+            {isPlayingAudio ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#e8c468] animate-pulse" />
+                <span>MUSIC ACTIVE [{audioSecondsRemaining}s]</span>
+                <span className="flex items-end gap-0.5 h-2.5">
+                  <span className="w-0.5 bg-[#e8c468] animate-[soundBar_0.8s_ease-in-out_infinite_0.1s] h-full" />
+                  <span className="w-0.5 bg-[#e8c468] animate-[soundBar_0.8s_ease-in-out_infinite_0.3s] h-2/3" />
+                  <span className="w-0.5 bg-[#e8c468] animate-[soundBar_0.8s_ease-in-out_infinite_0.5s] h-4/5" />
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-zinc-500">♫</span>
+                <span>AUDIO: READY (12s THEME)</span>
+              </>
+            )}
+          </div>
+
+          {/* Quick Bypass Link */}
+          <button
+            type="button"
+            onClick={handleDirectBypass}
+            className="detectrix-hud-font text-[11px] sm:text-xs font-semibold tracking-widest text-[#e8c468]/80 hover:text-[#e8c468] uppercase px-3 py-1.5 bg-black/60 hover:bg-black/90 border border-[#e8c468]/30 hover:border-[#e8c468] rounded transition-all cursor-pointer"
+            title="Skip directly to the portal"
+          >
+            SKIP TO PORTAL »
+          </button>
+        </div>
+      </header>
+
+      {/* ========================================================
+          3. MAIN DOSSIER: "THE DETECTRIX FILE" & PLAY BUTTON
+          Reduced typography, compact detective layout, single page
+          ======================================================== */}
+      <section className="relative z-30 flex-1 flex items-center justify-center px-4 sm:px-6 py-4">
+        <div className="w-full max-w-2xl bg-black/75 sm:bg-black/80 backdrop-blur-xl border border-[#e8c468]/35 rounded-xl p-6 sm:p-10 shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_20px_rgba(232,196,104,0.12)] text-center relative overflow-hidden">
+          {/* Subtle Top Amber Glow Accent */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-[2px] bg-gradient-to-r from-transparent via-[#e8c468] to-transparent" />
+
+          {/* Dossier Header Stamp */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#e8c468]/10 border border-[#e8c468]/25 mb-4 sm:mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e8c468]" />
+            <span className="detectrix-hud-font text-[11px] sm:text-xs font-bold tracking-widest text-[#e8c468] uppercase">
+              CONFIDENTIAL CASE DOSSIER // {DETECTRIX_INTRO_CONFIG.department}
+            </span>
+          </div>
+
+          {/* Title Presentation (Reduced Font Size per user instruction) */}
+          <div className="space-y-1 mb-3">
+            <p className="detectrix-hud-font text-xs sm:text-sm text-[#e8c468]/70 tracking-[0.3em] uppercase">
+              {DETECTRIX_INTRO_CONFIG.titleLine1}
+            </p>
+            <h1 className="detectrix-display-font text-3xl sm:text-5xl md:text-6xl font-black tracking-widest text-[#e8c468] detectrix-gold-glow uppercase leading-tight">
+              {DETECTRIX_INTRO_CONFIG.titleLine2}
+            </h1>
+          </div>
+
+          {/* Subtitle / Tagline */}
+          <p className="detectrix-serif-font italic text-sm sm:text-base text-zinc-300 mb-6 sm:mb-8 max-w-lg mx-auto leading-relaxed">
+            &ldquo;{DETECTRIX_INTRO_CONFIG.tagline}&rdquo;
+          </p>
+
+          {/* Metadata Grid (Compact, High-Density Intelligence) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 text-left mb-8 max-w-lg mx-auto">
+            <div className="bg-black/60 border border-zinc-800 p-2.5 rounded">
+              <span className="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                VENUE
+              </span>
+              <span className="text-xs sm:text-sm font-mono text-[#e8c468] font-bold">
+                {DETECTRIX_INTRO_CONFIG.venue}
+              </span>
+            </div>
+            <div className="bg-black/60 border border-zinc-800 p-2.5 rounded">
+              <span className="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                TIME FRAME
+              </span>
+              <span className="text-xs sm:text-sm font-mono text-[#e8c468] font-bold">
+                {DETECTRIX_INTRO_CONFIG.duration}
+              </span>
+            </div>
+            <div className="col-span-2 sm:col-span-1 bg-black/60 border border-zinc-800 p-2.5 rounded">
+              <span className="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                BOUNTY
+              </span>
+              <span className="text-xs sm:text-sm font-mono text-[#e8c468] font-bold">
+                {DETECTRIX_INTRO_CONFIG.bounty}
+              </span>
+            </div>
+          </div>
+
+          {/* ====================================================
+              4. THE PLAY BUTTON (Click starts 12s cowboy soundtrack & enters)
+              ==================================================== */}
+          <div className="flex flex-col items-center justify-center gap-4">
+            {/* Primary Big Glowing Play Button */}
+            <button
+              id="detectrix-play-intro-btn"
+              type="button"
+              onClick={handlePlayAndEnter}
+              disabled={isNavigating}
+              className="group relative inline-flex items-center gap-3.5 px-7 sm:px-9 py-3.5 sm:py-4 bg-[#e8c468] hover:bg-[#f3d484] text-black font-mono font-black text-sm sm:text-base tracking-widest rounded-lg shadow-[0_0_30px_rgba(232,196,104,0.5)] hover:shadow-[0_0_45px_rgba(232,196,104,0.85)] transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-75 disabled:cursor-wait"
+            >
+              {/* Pulsing circular Play Icon badge */}
+              <span className="w-8 h-8 rounded-full bg-black text-[#e8c468] flex items-center justify-center text-sm font-bold pl-0.5 shadow-inner transition-transform group-hover:scale-110">
+                ▶
+              </span>
+
+              <span className="uppercase font-bold tracking-wider">
+                {isNavigating ? "ACCESSING INVESTIGATION..." : "PLAY AUDIO & OPEN CASE"}
+              </span>
+
+              {/* Pulsing Outer Glow Ring */}
+              <span className="absolute -inset-1 rounded-lg bg-[#e8c468]/30 blur-sm pointer-events-none animate-pulse" />
+            </button>
+
+            {/* Audio Toggle & Help Text */}
+            <div className="flex items-center gap-4 text-xs font-mono text-zinc-400 pt-1">
+              <button
+                type="button"
+                onClick={handleToggleAudioOnly}
+                className="hover:text-[#e8c468] underline decoration-zinc-700 hover:decoration-[#e8c468] transition-colors cursor-pointer flex items-center gap-1.5"
+                title="Toggle soundtrack playback on this page"
+              >
+                <span>{isPlayingAudio ? "⏸ PAUSE AUDIO" : "♫ PREVIEW THEME (12s)"}</span>
+              </button>
+              <span className="text-zinc-600">·</span>
+              <span className="text-zinc-400">
+                [PRESS <kbd className="text-[#e8c468] bg-black/60 px-1 py-0.5 border border-zinc-800 rounded">SPACE</kbd> TO PLAY]
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================
+          5. FOOTER: STATUS NOTES
+          ======================================================== */}
+      <footer className="relative z-30 pb-4 sm:pb-6 px-4 sm:px-8 flex items-center justify-between text-zinc-400">
+        <div className="detectrix-hud-font text-[10px] sm:text-[11px] tracking-wider text-zinc-400">
+          DETECTRIX 2K26 · ALL FORENSIC LOGS ACTIVE
+        </div>
+
+        <div className="detectrix-hud-font text-[10px] sm:text-[11px] tracking-wider text-[#e8c468]/60">
+          AUTHORIZED INVESTIGATORS ONLY
+        </div>
+      </footer>
+
+      {/* ========================================================
+          6. SCOPED STYLES & FONTS (Zero external dependencies)
           ======================================================== */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@1,400;1,600&family=Space+Mono:ital,wght@0,400;0,700&display=swap');
 
         .detectrix-display-font {
-          font-family: 'Bebas Neue', 'Graduate', 'Impact', sans-serif;
-          letter-spacing: 0.05em;
+          font-family: 'Bebas Neue', 'Impact', sans-serif;
+          letter-spacing: 0.12em;
         }
 
-        .detectrix-caption-font {
+        .detectrix-serif-font {
           font-family: 'Playfair Display', Georgia, serif;
-          font-style: italic;
         }
 
         .detectrix-hud-font {
           font-family: 'Space Mono', 'Courier Prime', monospace;
         }
 
-        .detectrix-gold-glow-lg {
+        .detectrix-gold-glow {
           color: #e8c468;
           text-shadow:
-            0 0 24px rgba(232, 196, 104, 0.7),
-            0 0 48px rgba(232, 196, 104, 0.4),
-            0 0 72px rgba(232, 196, 104, 0.25),
-            0 4px 8px rgba(0, 0, 0, 0.95);
+            0 0 16px rgba(232, 196, 104, 0.65),
+            0 0 32px rgba(232, 196, 104, 0.35),
+            0 2px 4px rgba(0, 0, 0, 0.95);
         }
 
         .detectrix-grain {
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
         }
 
         .detectrix-scanlines {
           background: linear-gradient(
-            rgba(18, 16, 14, 0) 50%,
-            rgba(0, 0, 0, 0.35) 50%
+            rgba(18, 16, 16, 0) 50%,
+            rgba(0, 0, 0, 0.25) 50%
           );
           background-size: 100% 4px;
         }
 
-        @keyframes detectrixKenBurns {
+        @keyframes kenBurnsSubtle {
           0% {
-            transform: scale(1.0);
+            transform: scale(1.02) translate(0, 0);
           }
           100% {
-            transform: scale(1.08);
+            transform: scale(1.08) translate(-1%, -1%);
           }
         }
 
-        .detectrix-ken-burns {
-          animation: detectrixKenBurns 3.2s ease-out forwards;
-        }
-
-        @keyframes detectrixVhsReveal {
-          0% {
-            filter: blur(10px);
-            opacity: 0;
-            transform: scale(0.96) translate(-4px, 2px);
-            text-shadow: -3px 0 rgba(255, 50, 50, 0.8), 3px 0 rgba(0, 200, 255, 0.8);
+        @keyframes soundBar {
+          0%, 100% {
+            height: 25%;
           }
-          30% {
-            filter: blur(4px);
-            opacity: 0.85;
-            transform: scale(0.98) translate(2px, -1px);
-            text-shadow: 2px 0 rgba(255, 50, 50, 0.6), -2px 0 rgba(0, 200, 255, 0.6);
+          50% {
+            height: 100%;
           }
-          65% {
-            filter: blur(1px);
-            opacity: 0.95;
-            transform: scale(1.0) translate(-1px, 0);
-            text-shadow: -1px 0 rgba(255, 50, 50, 0.3), 1px 0 rgba(0, 200, 255, 0.3);
-          }
-          100% {
-            filter: blur(0px);
-            opacity: 1;
-            transform: scale(1.0) translate(0, 0);
-            text-shadow: 0 0 24px rgba(232, 196, 104, 0.6);
-          }
-        }
-
-        .detectrix-vhs-reveal {
-          animation: detectrixVhsReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes detectrixPunchGlow {
-          0% {
-            transform: scale(0.88);
-            opacity: 0;
-            filter: brightness(1.8) drop-shadow(0 0 30px rgba(232, 196, 104, 0.9));
-          }
-          60% {
-            transform: scale(1.03);
-            opacity: 1;
-            filter: brightness(1.2) drop-shadow(0 0 20px rgba(232, 196, 104, 0.6));
-          }
-          100% {
-            transform: scale(1.0);
-            opacity: 1;
-            filter: brightness(1.0) drop-shadow(0 0 14px rgba(232, 196, 104, 0.45));
-          }
-        }
-
-        .detectrix-punch-in {
-          animation: detectrixPunchGlow 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         @keyframes detectrixShutterFlash {
           0% {
             opacity: 0;
           }
-          20% {
+          25% {
             opacity: 0.95;
-            background-color: #fff9e6;
+            background-color: #fff8e1;
           }
           100% {
             opacity: 0;
@@ -663,10 +510,10 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
         }
 
         .detectrix-shutter-flash {
-          animation: detectrixShutterFlash 0.42s ease-out forwards;
+          animation: detectrixShutterFlash 0.40s ease-out forwards;
         }
       `}</style>
-    </div>
+    </main>
   );
 };
 
