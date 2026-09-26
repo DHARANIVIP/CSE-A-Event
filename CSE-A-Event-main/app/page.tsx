@@ -4,7 +4,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Tile } from "@/components/ui/Tile";
 import { StatusBanner } from "@/components/ui/StatusBanner";
 import { CaseDossier } from "@/components/home/CaseDossier";
-import { CaseIntroGate } from "@/components/entry/CaseIntroGate";
+import { CinematicDesertBackground } from "@/components/background/CinematicDesertBackground";
 import {
   CaseFolder,
   Rulebook,
@@ -35,8 +35,8 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Fullscreen Case Intro Gate: Shown upon entering the site */}
-      <CaseIntroGate caseTitle="THE CODEOCLOCK\nFILE" fileNumber="CASE FILE  Nº  2K26" />
+      {/* 3D Cinematic Panoramic Desert Vista & Ambient Simulation */}
+      <CinematicDesertBackground />
 
       <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8 py-2 sm:py-4 relative z-10">
         {/* 1. Main Hero Command Header */}
