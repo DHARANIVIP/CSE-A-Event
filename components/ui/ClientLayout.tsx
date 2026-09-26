@@ -22,17 +22,13 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
       <SkipLink />
       <OfflineBanner />
 
-      {/* Procedural Canvas & CSS Brick Wall Background (Suppressed on Landing Page for Cinematic Desert Vista) */}
-      {!isLandingPage && (
-        <>
-          <BrickBackground
-            brightnessLevel={bgPrefs.brickBrightness}
-            overlayOpacity={bgPrefs.overlayOpacity}
-          />
-          <DustMotes enabled={true} />
-          <RainBackground enabled={bgPrefs.rainEnabled} />
-        </>
-      )}
+      {/* Procedural Canvas & CSS Brick Wall Background with Noir Atmosphere */}
+      <BrickBackground
+        brightnessLevel={bgPrefs.brickBrightness}
+        overlayOpacity={bgPrefs.overlayOpacity}
+      />
+      <DustMotes enabled={true} />
+      <RainBackground enabled={bgPrefs.rainEnabled} />
 
       {/* Sticky Paper Header */}
       <Header bgPrefs={bgPrefs} />
