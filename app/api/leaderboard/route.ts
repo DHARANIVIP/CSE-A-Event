@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
       const { data: dbRows, error } = await sb.from("leaderboard").select("*");
       if (!error && dbRows) {
         rows = dbRows
+          .filter((r: { team_id: string }) => r.team_id !== "TEAM-01" && r.team_id !== "TEAM-02")
           .map(
             (r: {
               team_id: string;
@@ -88,7 +89,9 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Aggregate question progress and box progress per team
-    const activeTeams = Array.from(mockDB.teams.values()).filter((t) => !t.disabled);
+    const activeTeams = Array.from(mockDB.teams.values()).filter(
+      (t) => !t.disabled && t.id !== "TEAM-01" && t.id !== "TEAM-02"
+    );
 
     const teamEntries = activeTeams.map((t) => {
       const boxSolved = boxSolvedMap.get(t.id);

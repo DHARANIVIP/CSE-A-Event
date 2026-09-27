@@ -47,7 +47,7 @@ export default function DevKitPage() {
         </div>
         <div className="mt-4 flex items-center justify-between">
           <Logo isCompact />
-          <TeamBadge teamId="TEAM-01" teamName="Binary Shadows" />
+          <TeamBadge teamId="DTX-01" teamName="Binary Shadows" />
           <TeamBadge />
         </div>
       </Panel>
@@ -97,7 +97,7 @@ export default function DevKitPage() {
         <div className="max-w-md space-y-4">
           <InputBar
             label="TEAM IDENTIFIER"
-            placeholder="e.g. TEAM-01"
+            placeholder="e.g. DTX-01"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             hint="Assigned on your printed badge"

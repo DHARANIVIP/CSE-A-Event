@@ -434,29 +434,6 @@ export const mockDB: MockDBState = {
         created_at: new Date().toISOString(),
       },
     ],
-    [
-      "TEAM-01",
-      {
-        id: "TEAM-01",
-        name: "Cipher Enigma",
-        members: ["Alice", "Bob", "Charlie"],
-        // PIN: 123456 (scrypt hash with salt TEST_SALT_16_BYTES_ABC)
-        pin_hash: "TEST_SALT_16_BYTES_ABC:N5S0teyDLOtqI2uUvy4feKho2FWb1U_6zHZgoiwAtbY",
-        disabled: false,
-        created_at: new Date().toISOString(),
-      },
-    ],
-    [
-      "TEAM-02",
-      {
-        id: "TEAM-02",
-        name: "Binary Shadows",
-        members: ["David", "Eva", "Frank"],
-        pin_hash: "TEST_SALT_16_BYTES_ABC:N5S0teyDLOtqI2uUvy4feKho2FWb1U_6zHZgoiwAtbY",
-        disabled: false,
-        created_at: new Date().toISOString(),
-      },
-    ],
   ]),
   eventState: {
     id: 1,

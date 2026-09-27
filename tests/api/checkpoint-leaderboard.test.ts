@@ -27,6 +27,13 @@ describe("Question Verification & Mock Leaderboard System", () => {
       expect(row.solved).toBe(false);
       expect(row.boxSolved).toBe(false);
     }
+
+    // TEAM-01 and TEAM-02 must be completely removed from the leaderboard
+    const team01 = json.rows.find((r: { teamId: string }) => r.teamId === "TEAM-01");
+    const team02 = json.rows.find((r: { teamId: string }) => r.teamId === "TEAM-02");
+    expect(team01).toBeUndefined();
+    expect(team02).toBeUndefined();
+    expect(json.rows.length).toBe(25); // DTX-01 to DTX-25 only
   });
 
   it("ranks team #1 when they solve the first question, and preserves first-solver advantage on tie", async () => {
