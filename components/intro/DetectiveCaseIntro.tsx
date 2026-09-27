@@ -9,8 +9,8 @@ import { useRouter } from "next/navigation";
 // ============================================================================
 
 export const EXTERNAL_REDIRECT_LINK: string = "/";
-export const DETECTRIX_MUSIC_PLAYED_KEY = "detectrix_entry_music_played";
-export const DETECTRIX_INTRO_ENTERED_KEY = "detectrix_intro_entered";
+export const DETECTRIX_MUSIC_PLAYED_KEY = "detectrix_entry_music_played_v3";
+export const DETECTRIX_INTRO_ENTERED_KEY = "detectrix_intro_entered_v3";
 
 /**
  * Checks if the entry music has already been played once.
@@ -19,13 +19,13 @@ export const DETECTRIX_INTRO_ENTERED_KEY = "detectrix_intro_entered";
 export const hasEntryMusicPlayed = (): boolean => {
   if (typeof window === "undefined") return false;
   try {
-    return (
-      localStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true" ||
-      sessionStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true"
-    );
+    if (localStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true") return true;
+    if (sessionStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true") return true;
+    if (typeof document !== "undefined" && document.cookie.includes(`${DETECTRIX_MUSIC_PLAYED_KEY}=true`)) return true;
   } catch {
     return false;
   }
+  return false;
 };
 
 export const DETECTRIX_INTRO_CONFIG = {
@@ -33,6 +33,74 @@ export const DETECTRIX_INTRO_CONFIG = {
   audioSrc: "/audio/cowboy-theme.mp3",
   audioDurationMs: 12000, // Strictly 12 seconds
   coverImage: "/assets/detectrix-noir-backdrop.jpg",
+};
+
+// Global audio element that survives React component lifecycles & in-place state transitions
+let globalThemeAudio: HTMLAudioElement | null = null;
+let audioStopTimer: ReturnType<typeof setTimeout> | null = null;
+let audioFadeInterval: ReturnType<typeof setInterval> | null = null;
+
+export const playEntryMusicOnce = (): boolean => {
+  if (typeof window === "undefined") return false;
+
+  if (hasEntryMusicPlayed()) {
+    return false;
+  }
+
+  // Immediately mark as played to prevent any subsequent trigger across storages & cookie
+  try {
+    localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+    sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+    if (typeof document !== "undefined") {
+      document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+    }
+  } catch {}
+
+  try {
+    if (!globalThemeAudio) {
+      globalThemeAudio = new Audio(DETECTRIX_INTRO_CONFIG.audioSrc);
+    }
+    globalThemeAudio.currentTime = 0;
+    globalThemeAudio.volume = 0.95;
+    globalThemeAudio.loop = false;
+
+    const playPromise = globalThemeAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        console.warn("Audio autoplay policy check:", err);
+      });
+    }
+
+    // Fade out during last 1.8 seconds of the 12s window
+    if (audioFadeInterval) clearInterval(audioFadeInterval);
+    setTimeout(() => {
+      audioFadeInterval = setInterval(() => {
+        if (globalThemeAudio && globalThemeAudio.volume > 0.08) {
+          globalThemeAudio.volume = Math.max(0, globalThemeAudio.volume - 0.12);
+        } else if (globalThemeAudio) {
+          globalThemeAudio.volume = 0;
+          if (audioFadeInterval) clearInterval(audioFadeInterval);
+        }
+      }, 150);
+    }, 10200);
+
+    // Stop playback strictly at 12 seconds
+    if (audioStopTimer) clearTimeout(audioStopTimer);
+    audioStopTimer = setTimeout(() => {
+      try {
+        if (globalThemeAudio) {
+          globalThemeAudio.pause();
+          globalThemeAudio.currentTime = 0;
+        }
+      } catch {}
+      if (audioFadeInterval) clearInterval(audioFadeInterval);
+    }, DETECTRIX_INTRO_CONFIG.audioDurationMs);
+
+    return true;
+  } catch (e) {
+    console.warn("Audio play exception:", e);
+    return false;
+  }
 };
 
 // ============================================================================
@@ -55,136 +123,71 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
   const [isFlashing, setIsFlashing] = useState<boolean>(false);
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const audioFadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Persistent audio element mounted on document.body so routing preserves playback seamlessly
-  const getOrCreateAudio = useCallback((): HTMLAudioElement | null => {
-    if (typeof window === "undefined") return null;
-    if (!audioRef.current) {
-      let audio = document.getElementById("detectrix-cowboy-theme-audio") as HTMLAudioElement;
-      if (!audio) {
-        audio = document.createElement("audio");
-        audio.id = "detectrix-cowboy-theme-audio";
-        audio.src = DETECTRIX_INTRO_CONFIG.audioSrc;
-        audio.preload = "auto";
-        audio.loop = false;
-        document.body.appendChild(audio);
-      }
-      audioRef.current = audio;
+  // Pre-buffer audio as soon as intro is displayed to user so click playback is instantaneous
+  useEffect(() => {
+    if (typeof window !== "undefined" && !hasEntryMusicPlayed()) {
+      try {
+        if (!globalThemeAudio) {
+          globalThemeAudio = new Audio(DETECTRIX_INTRO_CONFIG.audioSrc);
+        }
+        globalThemeAudio.preload = "auto";
+        globalThemeAudio.load();
+      } catch {}
     }
-    return audioRef.current;
   }, []);
 
-  // Trigger 12-second background music playback
-  // PLAYS ONLY ONCE: Never replays on page refresh or next visit
+  // Trigger 12-second background music playback (plays ONLY ONCE)
   const startAudioPlayback = useCallback((): boolean => {
-    if (hasEntryMusicPlayed()) {
-      return false;
-    }
+    const started = playEntryMusicOnce();
+    if (started) {
+      setIsPlayingAudio(true);
+      setAudioSecondsRemaining(12);
 
-    // Immediately mark as played to prevent any subsequent trigger
-    try {
-      localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
-      sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
-    } catch {}
-
-    const audio = getOrCreateAudio();
-    if (!audio) return false;
-
-    try {
-      audio.currentTime = 0;
-      audio.volume = 0.95;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn("Audio autoplay policy check:", err);
-        });
+      if (audioCountdownIntervalRef.current) {
+        clearInterval(audioCountdownIntervalRef.current);
       }
-    } catch (e) {
-      console.warn("Audio play exception:", e);
-    }
-
-    setIsPlayingAudio(true);
-    setAudioSecondsRemaining(12);
-
-    // 1-second countdown ticker
-    if (audioCountdownIntervalRef.current) {
-      clearInterval(audioCountdownIntervalRef.current);
-    }
-    audioCountdownIntervalRef.current = setInterval(() => {
-      setAudioSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          if (audioCountdownIntervalRef.current) {
-            clearInterval(audioCountdownIntervalRef.current);
+      audioCountdownIntervalRef.current = setInterval(() => {
+        setAudioSecondsRemaining((prev) => {
+          if (prev <= 1) {
+            if (audioCountdownIntervalRef.current) {
+              clearInterval(audioCountdownIntervalRef.current);
+            }
+            return 0;
           }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return started;
+  }, []);
 
-    // Audio fade-out during final 1.8 seconds of the 12s window
-    const FADE_START_MS = 10200;
-    setTimeout(() => {
-      if (audioFadeIntervalRef.current) clearInterval(audioFadeIntervalRef.current);
-      audioFadeIntervalRef.current = setInterval(() => {
-        if (audio && audio.volume > 0.08) {
-          audio.volume = Math.max(0, audio.volume - 0.12);
-        } else if (audio) {
-          audio.volume = 0;
-          if (audioFadeIntervalRef.current) clearInterval(audioFadeIntervalRef.current);
-        }
-      }, 150);
-    }, FADE_START_MS);
-
-    // Stop playback strictly at 12 seconds
-    if (audioStopTimerRef.current) clearTimeout(audioStopTimerRef.current);
-    audioStopTimerRef.current = setTimeout(() => {
-      try {
-        if (audio) {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = 0.95;
-        }
-      } catch {}
-      setIsPlayingAudio(false);
-      if (audioFadeIntervalRef.current) clearInterval(audioFadeIntervalRef.current);
-      if (audioCountdownIntervalRef.current) clearInterval(audioCountdownIntervalRef.current);
-    }, DETECTRIX_INTRO_CONFIG.audioDurationMs);
-
-    return true;
-  }, [getOrCreateAudio]);
-
-  // Click Action: Start cowboy soundtrack and seamlessly navigate to landing page
+  // Click Action: Start cowboy soundtrack and seamlessly reveal landing page in-place (NO ENDPOINTS)
   const handleEnterCase = useCallback(() => {
     if (isNavigating) return;
 
     // 1. Play 12-second cowboy theme audio immediately on click (plays ONLY ONCE)
     startAudioPlayback();
 
-    // 2. Mark intro as entered in cookie and storages so it never blocks or replays on refresh
+    // 2. Mark intro as entered in session and cookie
     try {
-      localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
-      sessionStorage.setItem("introSeen", "true");
-      document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      if (typeof document !== "undefined") {
+        document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; SameSite=Lax`;
+      }
     } catch {}
 
     // 3. Shutter flash effect
     setIsFlashing(true);
     setIsNavigating(true);
 
-    // 4. Transition to portal
+    // 4. In-place transition to main landing page (NO URL REDIRECTS / NO ENDPOINTS)
     setTimeout(() => {
       if (onEnterInvestigation) {
         onEnterInvestigation();
-      } else if (redirectUrl.startsWith("http://") || redirectUrl.startsWith("https://")) {
-        window.location.href = redirectUrl;
       } else {
-        router.push(redirectUrl);
+        router.push(redirectUrl || "/");
       }
     }, 450);
   }, [isNavigating, onEnterInvestigation, redirectUrl, router, startAudioPlayback]);
@@ -196,18 +199,19 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     setIsFlashing(true);
     setIsNavigating(true);
     try {
-      localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
-      sessionStorage.setItem("introSeen", "true");
-      document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+      sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+      if (typeof document !== "undefined") {
+        document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; SameSite=Lax`;
+        document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      }
     } catch {}
     setTimeout(() => {
       if (onEnterInvestigation) {
         onEnterInvestigation();
-      } else if (redirectUrl.startsWith("http://") || redirectUrl.startsWith("https://")) {
-        window.location.href = redirectUrl;
       } else {
-        router.push(redirectUrl);
+        router.push(redirectUrl || "/");
       }
     }, 300);
   }, [isNavigating, onEnterInvestigation, redirectUrl, router]);

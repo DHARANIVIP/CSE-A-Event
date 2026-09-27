@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function IntroPage() {
-  return <DetectiveCaseIntro />;
+  return <DetectiveCaseIntro redirectUrl="/?entered=1" />;
 }

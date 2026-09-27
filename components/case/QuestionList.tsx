@@ -335,12 +335,6 @@ export const QuestionList: React.FC<QuestionListProps> = ({
                 {q.text}
               </p>
 
-              {/* Clue Derivation Rule */}
-              <div className="text-xs font-mono text-crimson-dark bg-paper/80 p-2 border border-ink/20 rounded">
-                <span className="font-bold uppercase tracking-wider text-ink">Clue Derivation:</span>{" "}
-                {q.derivation}
-              </div>
-
               {/* Interactive Answer Checker (Shows Green for Correct, Red for Wrong) */}
               <div className="pt-2 border-t border-ink/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 {isCorrect ? (
