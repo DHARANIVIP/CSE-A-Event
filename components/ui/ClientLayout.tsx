@@ -12,6 +12,7 @@ import { eventConfig } from "@/config/event.config";
 
 import { usePathname } from "next/navigation";
 import { IntroProvider, useIntro } from "../intro/IntroContext";
+import { InspectGuard } from "../security/InspectGuard";
 
 interface ClientLayoutProps {
   hasEnteredInitially?: boolean;
@@ -24,6 +25,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({
 }) => {
   return (
     <IntroProvider hasEnteredInitially={hasEnteredInitially}>
+      <InspectGuard />
       <ClientLayoutContent>{children}</ClientLayoutContent>
     </IntroProvider>
   );

@@ -13,19 +13,17 @@ export const DETECTRIX_MUSIC_PLAYED_KEY = "detectrix_entry_music_played_v3";
 export const DETECTRIX_INTRO_ENTERED_KEY = "detectrix_intro_entered_v3";
 
 /**
- * Checks if the entry music has already been played once.
- * Prevents replaying on refresh, next time, or re-entry.
+ * Checks if the entry music has already been played once in this browser session.
+ * Prevents replaying on refresh, next time, or re-entry within the same tab.
+ * When the user closes the link/tab and reopens it, music will play once again.
  */
 export const hasEntryMusicPlayed = (): boolean => {
   if (typeof window === "undefined") return false;
   try {
-    if (localStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true") return true;
-    if (sessionStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true") return true;
-    if (typeof document !== "undefined" && document.cookie.includes(`${DETECTRIX_MUSIC_PLAYED_KEY}=true`)) return true;
+    return sessionStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true";
   } catch {
     return false;
   }
-  return false;
 };
 
 export const DETECTRIX_INTRO_CONFIG = {
@@ -47,12 +45,14 @@ export const playEntryMusicOnce = (): boolean => {
     return false;
   }
 
-  // Immediately mark as played to prevent any subsequent trigger across storages & cookie
+  // Mark as played in this tab session so page refreshes will not replay it
   try {
-    localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
     sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+    // Clean up any legacy persistent storage
+    localStorage.removeItem(DETECTRIX_MUSIC_PLAYED_KEY);
+    localStorage.removeItem(DETECTRIX_INTRO_ENTERED_KEY);
     if (typeof document !== "undefined") {
-      document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     }
   } catch {}
 
@@ -170,11 +170,11 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     // 1. Play 12-second cowboy theme audio immediately on click (plays ONLY ONCE)
     startAudioPlayback();
 
-    // 2. Mark intro as entered in session and cookie
+    // 2. Mark intro as entered in session storage
     try {
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       if (typeof document !== "undefined") {
-        document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; SameSite=Lax`;
+        document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       }
     } catch {}
 

@@ -87,24 +87,31 @@ describe("Intro Page & Entry Music Logic", () => {
     expect(hasEntryMusicPlayed()).toBe(false);
   });
 
-  it("indicates entry music has been played after entering, and prevents replay", () => {
-    // Simulate user entering case and playing entry music
-    localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
-    localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
+  it("indicates entry music has been played after entering, and prevents replay on refresh", () => {
+    // Simulate user entering case and playing entry music in this session
+    sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+    sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
 
     // Must be true now
     expect(hasEntryMusicPlayed()).toBe(true);
 
-    // Simulating next visit / page refresh: music remains flagged as played
-    const storedStatus = localStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY);
+    // Simulating page refresh within session: music remains flagged as played
+    const storedStatus = sessionStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY);
     expect(storedStatus).toBe("true");
 
-    // Guard guarantees music will not replay
+    // Guard guarantees music will not replay on refresh
     expect(hasEntryMusicPlayed()).toBe(true);
   });
 
-  it("handles sessionStorage fallback seamlessly", () => {
+  it("resets and plays music once again when link/session is closed and reopened", () => {
+    // Music was played in current session
     sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
     expect(hasEntryMusicPlayed()).toBe(true);
+
+    // Closing the link/tab and reopening link clears session storage
+    sessionStorage.clear();
+
+    // Reopening starts fresh: music is not yet played and will play once again
+    expect(hasEntryMusicPlayed()).toBe(false);
   });
 });
