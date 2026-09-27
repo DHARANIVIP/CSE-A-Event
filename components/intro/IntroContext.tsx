@@ -19,13 +19,11 @@ export const IntroProvider: React.FC<{
 }> = ({ hasEnteredInitially = false, children }) => {
   const [hasEntered, setHasEntered] = useState<boolean>(hasEnteredInitially);
 
-  // Check client-side persistent storage on mount
+  // Check client-side session storage on mount
   useEffect(() => {
     try {
-      const inStorage =
-        localStorage.getItem(DETECTRIX_INTRO_ENTERED_KEY) === "true" ||
-        sessionStorage.getItem(DETECTRIX_INTRO_ENTERED_KEY) === "true";
-      if (inStorage) {
+      const inSession = sessionStorage.getItem(DETECTRIX_INTRO_ENTERED_KEY) === "true";
+      if (inSession) {
         setHasEntered(true);
       }
     } catch {}
@@ -33,10 +31,8 @@ export const IntroProvider: React.FC<{
 
   const enterInvestigation = useCallback(() => {
     try {
-      localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
-      sessionStorage.setItem("introSeen", "true");
-      document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; SameSite=Lax`;
     } catch {}
     setHasEntered(true);
   }, []);

@@ -1,6 +1,5 @@
 import React from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { Tile } from "@/components/ui/Tile";
 import { StatusBanner } from "@/components/ui/StatusBanner";
@@ -13,30 +12,15 @@ import {
   BadgeIcon,
   Fingerprint,
 } from "@/components/icons";
-import { cookies } from "next/headers";
 import { getTeamSession } from "@/lib/auth";
 import { calculateEventStatus } from "@/lib/time";
 import { mockDB } from "@/lib/supabase-server";
 import { eventConfig } from "@/config/event.config";
-import { HomeSessionStamper } from "@/components/home/HomeSessionStamper";
+import { HomeIntroGate } from "@/components/home/HomeIntroGate";
 
 export const dynamic = "force-dynamic";
 
-interface HomePageProps {
-  searchParams?: Promise<{ entered?: string; fromIntro?: string }>;
-}
-
-export default async function HomePage(props: HomePageProps) {
-  const cookieStore = await cookies();
-  const searchParams = props.searchParams ? await props.searchParams : {};
-  const hasEnteredQuery = searchParams.entered === "1" || searchParams.fromIntro === "1";
-  const hasEnteredCookie = cookieStore.get("detectrix_intro_seen")?.value === "true";
-
-  // First-time visit displays the Intro Page first!
-  if (!hasEnteredQuery && !hasEnteredCookie) {
-    redirect("/intro");
-  }
-
+export default async function HomePage() {
   const team = await getTeamSession();
 
   // Retrieve current event state from DB or server state
@@ -50,8 +34,7 @@ export default async function HomePage(props: HomePageProps) {
   const someoneSolved = mockDB.submissions.some((s) => s.is_correct);
 
   return (
-    <>
-      <HomeSessionStamper />
+    <HomeIntroGate>
       {/* 3D Cinematic Panoramic Desert Vista & Ambient Simulation */}
       <CinematicDesertBackground />
 
@@ -143,6 +126,6 @@ export default async function HomePage(props: HomePageProps) {
           </Link>
         </section>
       </div>
-    </>
+    </HomeIntroGate>
   );
 }
