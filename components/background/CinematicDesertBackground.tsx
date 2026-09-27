@@ -63,45 +63,16 @@ export const CinematicDesertBackground: React.FC = () => {
   const [isCameraPaused, setIsCameraPaused] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Play Cowboy Theme soundtrack strictly ONE TIME for 6 SECONDS ONLY when user scrolls the landing page
   useEffect(() => {
     setIsMounted(true);
 
-    let scrollHandled = false;
-    const onUserScroll = (e?: Event) => {
-      if (scrollHandled) return;
-
-      // If triggered by wheel, ensure there is actual delta displacement
-      if (e && e.type === "wheel") {
-        const wheelEv = e as WheelEvent;
-        if (Math.abs(wheelEv.deltaY) < 1 && Math.abs(wheelEv.deltaX) < 1) return;
-      }
-
-      scrollHandled = true;
-
-      // Immediately detach all scroll listeners so it cannot be triggered again or cause lag
-      window.removeEventListener("scroll", onUserScroll);
-      window.removeEventListener("wheel", onUserScroll);
-      window.removeEventListener("touchmove", onUserScroll);
-
-      desertAudio.playSixSecondsOnScroll();
-    };
-
-    window.addEventListener("scroll", onUserScroll, { passive: true });
-    window.addEventListener("wheel", onUserScroll, { passive: true });
-    window.addEventListener("touchmove", onUserScroll, { passive: true });
-
-    // Dissolve dust haze over 3.2 seconds
+    // Smoothly dissolve initial haze promptly without blocking the page
     const timer = setTimeout(() => {
       setHazeActive(false);
-    }, 3200);
+    }, 300);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("scroll", onUserScroll);
-      window.removeEventListener("wheel", onUserScroll);
-      window.removeEventListener("touchmove", onUserScroll);
-      desertAudio.stop();
     };
   }, []);
 
@@ -209,7 +180,7 @@ export const CinematicDesertBackground: React.FC = () => {
     let ballX = -ballRadius * 2;
     const groundY = height * 0.9;
     let ballAngle = 0;
-    const ballSpeed = 1.05;
+    const ballSpeed = 0.65;
     let lastAudioStep = 0;
 
     const tracks: SandTrackSegment[] = [];
@@ -220,7 +191,7 @@ export const CinematicDesertBackground: React.FC = () => {
     let tumbleX = width + 80;
     let tumbleY = height * 0.83;
     let tumbleAngle = 0;
-    let tumbleSpeed = 1.7;
+    let tumbleSpeed = 1.05;
     let tumbleBounce = 0;
     const tumbleRadius = width < 768 ? 18 : 26;
 
@@ -347,10 +318,7 @@ export const CinematicDesertBackground: React.FC = () => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(248, 224, 180, ${currentAlpha.toFixed(3)})`;
-        ctx.shadowColor = "rgba(255, 220, 160, 0.3)";
-        ctx.shadowBlur = 3;
         ctx.fill();
-        ctx.shadowBlur = 0;
       }
 
       // ===============================================================
@@ -456,20 +424,30 @@ export const CinematicDesertBackground: React.FC = () => {
       // 3D Stone Sphere
       const ballCenterY = groundY;
 
-      // Contact shadow
+      // Contact shadow (Hardware-accelerated smooth gradient ellipse without expensive ctx.filter)
       ctx.save();
+      const shadowGrad = ctx.createRadialGradient(
+        ballX + ballRadius * 0.15,
+        ballCenterY + ballRadius * 0.88,
+        0,
+        ballX + ballRadius * 0.15,
+        ballCenterY + ballRadius * 0.88,
+        ballRadius * 1.15
+      );
+      shadowGrad.addColorStop(0, "rgba(30, 18, 10, 0.38)");
+      shadowGrad.addColorStop(0.65, "rgba(30, 18, 10, 0.15)");
+      shadowGrad.addColorStop(1, "rgba(30, 18, 10, 0)");
+      ctx.fillStyle = shadowGrad;
       ctx.beginPath();
       ctx.ellipse(
         ballX + ballRadius * 0.15,
         ballCenterY + ballRadius * 0.88,
-        ballRadius * 1.15,
-        ballRadius * 0.32,
+        ballRadius * 1.25,
+        ballRadius * 0.38,
         0,
         0,
         Math.PI * 2
       );
-      ctx.fillStyle = "rgba(30, 18, 10, 0.4)";
-      ctx.filter = "blur(3px)";
       ctx.fill();
       ctx.restore();
 
@@ -610,13 +588,13 @@ export const CinematicDesertBackground: React.FC = () => {
             Opens on warm dust haze that smoothly dissolves
             ======================================================== */}
         <div
-          className={`fixed inset-0 z-10 pointer-events-none transition-opacity duration-[3000ms] ease-out ${
+          className={`fixed inset-0 z-10 pointer-events-none transition-opacity duration-1000 ease-out ${
             hazeActive ? "opacity-100" : "opacity-0"
           }`}
           style={{
             background:
               "radial-gradient(ellipse at 50% 40%, rgba(255, 248, 232, 0.95) 0%, rgba(244, 226, 192, 0.88) 55%, rgba(215, 178, 132, 0.8) 100%)",
-            backdropFilter: hazeActive ? "blur(10px)" : "blur(0px)",
+            backdropFilter: hazeActive ? "blur(4px)" : "none",
           }}
         />
 
@@ -681,7 +659,7 @@ export const CinematicDesertBackground: React.FC = () => {
         }
 
         .animate-cinematic-desert-camera {
-          animation: cinematicDesertGlide 44s ease-in-out infinite alternate;
+          animation: cinematicDesertGlide 75s ease-in-out infinite alternate;
         }
 
         @media (prefers-reduced-motion: reduce) {

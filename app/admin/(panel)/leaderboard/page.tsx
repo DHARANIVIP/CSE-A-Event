@@ -12,6 +12,9 @@ interface LeaderboardRow {
   teamId: string;
   teamName: string;
   solved: boolean;
+  boxSolved?: boolean;
+  questionsSolved?: number;
+  totalQuestions?: number;
   rank: number | null;
   solvedAt: string | null;
   solvedAtFormatted: string | null;

@@ -1,13 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Trophy } from "@/components/icons";
 import { soundManager } from "@/components/sound/SoundManager";
 
 export interface LeaderboardRow {
   teamId: string;
   teamName: string;
+  leaderName?: string | null;
   solved: boolean;
+  boxSolved?: boolean;
+  questionsSolved?: number;
+  totalQuestions?: number;
   rank: number | null;
   solvedAt: string | null;
   solvedAtFormatted: string | null;
@@ -23,7 +27,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     try {
       const res = await fetch("/api/leaderboard");
       if (res.ok) {
@@ -35,16 +39,25 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
       soundManager.playClick();
       fetchLeaderboard();
-      const interval = setInterval(fetchLeaderboard, 7000);
+      const interval = setInterval(fetchLeaderboard, 6000);
       return () => clearInterval(interval);
     }
-  }, [isOpen]);
+  }, [isOpen, fetchLeaderboard]);
+
+  // Listen for instant live updates when any question answer is checked or reset
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchLeaderboard();
+    };
+    window.addEventListener("leaderboard-update", handleUpdate);
+    return () => window.removeEventListener("leaderboard-update", handleUpdate);
+  }, [fetchLeaderboard]);
 
   // Handle ESC key to close drawer
   useEffect(() => {
@@ -59,33 +72,38 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Analytics & Top 3 Solver Derivation
+  // Analytics & Top 3 Solver Derivation based on questions solved & timestamps
   const analytics = useMemo(() => {
     const totalTeams = rows.length;
-    const solvedTeams = rows.filter((r) => r.solved).sort((a, b) => (a.rank || 99) - (b.rank || 99));
-    const solvedCount = solvedTeams.length;
+
+    // Ranked teams: either cracked box or solved at least 1 question
+    const rankedTeams = rows
+      .filter((r) => (r.rank !== null && r.rank > 0) || (r.questionsSolved && r.questionsSolved > 0) || r.solved)
+      .sort((a, b) => (a.rank || 999) - (b.rank || 999));
+
+    const totalActiveSolvers = rankedTeams.length;
     const totalAttempts = rows.reduce((acc, r) => acc + (r.attempts || 0), 0);
 
-    const first = solvedTeams[0] || null;
-    const second = solvedTeams[1] || null;
-    const third = solvedTeams[2] || null;
+    const first = rankedTeams[0] || null;
+    const second = rankedTeams[1] || null;
+    const third = rankedTeams[2] || null;
 
-    // Contender teams if not all 3 slots filled
-    const activeContenders = rows
-      .filter((r) => !r.solved)
+    // Contender teams if slots are empty
+    const unrankedContenders = rows
+      .filter((r) => !r.rank)
       .sort((a, b) => b.attempts - a.attempts);
 
     return {
       totalTeams,
-      solvedCount,
+      totalActiveSolvers,
       totalAttempts,
       podium: [
         {
           rankLabel: "1ST PLACE",
           medal: "🥇",
-          badge: "CHAMPION SOLVER",
+          badge: first?.boxSolved ? "CHAMPION SOLVER" : "CURRENT LEADER",
           team: first,
-          contender: !first ? activeContenders[0] : null,
+          contender: !first ? unrankedContenders[0] : null,
           color: "border-amber-600 bg-amber-500/10 text-amber-950",
           pillColor: "bg-gold text-ink border-ink",
         },
@@ -94,7 +112,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
           medal: "🥈",
           badge: "RUNNER-UP",
           team: second,
-          contender: !second ? (first ? activeContenders[0] : activeContenders[1]) : null,
+          contender: !second ? (first ? unrankedContenders[0] : unrankedContenders[1]) : null,
           color: "border-slate-400 bg-slate-300/15 text-slate-900",
           pillColor: "bg-slate-300 text-ink border-ink",
         },
@@ -103,7 +121,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
           medal: "🥉",
           badge: "BRONZE FINISHER",
           team: third,
-          contender: !third ? (second ? activeContenders[0] : activeContenders[2]) : null,
+          contender: !third ? (second ? unrankedContenders[0] : unrankedContenders[2]) : null,
           color: "border-amber-800 bg-amber-700/10 text-amber-950",
           pillColor: "bg-amber-700 text-paper border-ink",
         },
@@ -116,7 +134,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
 
   return (
     <>
-      {/* 1. Backdrop Overlay (Shades the main page without centering content) */}
+      {/* 1. Backdrop Overlay */}
       <div
         className="fixed inset-0 bg-ink/50 backdrop-blur-xs z-50 transition-opacity duration-200 select-none no-print"
         onClick={() => {
@@ -147,7 +165,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                 DETECTRIX LEADERBOARD
               </h2>
               <span className="font-mono text-[10px] text-muted tracking-wider uppercase block mt-0.5">
-                SIDEBAR SOLVER DOCKET · AUTO-REFRESHES LIVE
+                LIVE DOCKET · RANKED BY QUESTIONS SOLVED & FIRST-SOLVE TIMESTAMPS
               </span>
             </div>
           </div>
@@ -174,10 +192,10 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                 <span>INVESTIGATION ANALYTICS</span>
               </span>
               <span className="text-[10px] text-muted uppercase">
-                {analytics.solvedCount === 0
+                {analytics.totalActiveSolvers === 0
                   ? "PODIUM VACANT · RACE IS LIVE"
-                  : analytics.solvedCount < 3
-                  ? `${analytics.solvedCount} OF 3 PODIUM SPOTS CLAIMED`
+                  : analytics.totalActiveSolvers < 3
+                  ? `${analytics.totalActiveSolvers} OF 3 PODIUM SPOTS CLAIMED`
                   : "ALL 3 PODIUM SPOTS CLAIMED"}
               </span>
             </div>
@@ -188,8 +206,8 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                 <span className="font-display text-base font-black text-ink">{analytics.totalTeams}</span>
               </div>
               <div className="bg-paper p-2 rounded border border-ink/30">
-                <span className="block text-[10px] text-muted uppercase">SOLVERS</span>
-                <span className="font-display text-base font-black text-crimson">{analytics.solvedCount}</span>
+                <span className="block text-[10px] text-muted uppercase">ACTIVE SOLVERS</span>
+                <span className="font-display text-base font-black text-crimson">{analytics.totalActiveSolvers}</span>
               </div>
               <div className="bg-paper p-2 rounded border border-ink/30">
                 <span className="block text-[10px] text-muted uppercase">ATTEMPTS</span>
@@ -200,7 +218,6 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
 
           {/* ========================================================
               TOP THREE PODIUM & SPEED ANALYSIS
-              Prominently highlights the 1st, 2nd, and 3rd rank teams
               ======================================================== */}
           <section className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -208,13 +225,13 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                 <span>🏆</span>
                 <span>TOP 3 PODIUM INVESTIGATORS</span>
               </h3>
-              <span className="text-[10px] text-muted uppercase">Server-Verified Ranks</span>
+              <span className="text-[10px] text-muted uppercase">Fastest Solvers Ranked 1st</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {analytics.podium.map((pod, idx) => {
                 const team = pod.team;
-                const isSolved = Boolean(team?.solved);
+                const hasRank = Boolean(team && team.rank);
 
                 return (
                   <div
@@ -233,12 +250,17 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                       </div>
 
                       {/* Team Name or Open Slot Notice */}
-                      {isSolved && team ? (
+                      {hasRank && team ? (
                         <>
                           <div className="font-bold text-xs text-ink truncate" title={team.teamName}>
                             {team.teamName}
                           </div>
                           <div className="text-[10px] text-muted font-mono">{team.teamId}</div>
+                          <div className="mt-1 text-[11px] font-bold text-crimson">
+                            {team.boxSolved
+                              ? "MYSTERY BOX CRACKED"
+                              : `${team.questionsSolved || 0} / 10 QUESTIONS SOLVED`}
+                          </div>
                         </>
                       ) : (
                         <div>
@@ -248,7 +270,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                           <div className="text-[10px] text-muted italic mt-0.5">
                             {pod.contender
                               ? `Active Contender: ${pod.contender.teamName}`
-                              : "Crack code to claim"}
+                              : "Solve questions to claim"}
                           </div>
                         </div>
                       )}
@@ -256,11 +278,13 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
 
                     {/* Stats Footer */}
                     <div className="mt-3 pt-2 border-t border-ink/15 text-[10px] flex items-center justify-between">
-                      {isSolved && team ? (
+                      {hasRank && team ? (
                         <>
-                          <span className="text-success font-black">SOLVED ✓</span>
+                          <span className="text-success font-black">
+                            {team.boxSolved ? "WON ✓" : "LEAD ✓"}
+                          </span>
                           <span className="text-muted truncate ml-1" title={team.solvedAtFormatted || ""}>
-                            {team.solvedAtFormatted?.split(" ")[1] || "Done"}
+                            {team.solvedAtFormatted?.split(" ")[1] || "Active"}
                           </span>
                         </>
                       ) : (
@@ -301,11 +325,12 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                   <table className="w-full text-left font-mono text-xs">
                     <thead className="bg-cream border-b-2 border-ink text-ink uppercase sticky top-0 z-10 select-none">
                       <tr>
-                        <th className="p-2 w-12 text-center">RANK</th>
+                        <th className="p-2 w-14 text-center">RANK</th>
                         <th className="p-2">TEAM NAME</th>
                         <th className="p-2">ID</th>
+                        <th className="p-2 text-center">QUESTIONS</th>
                         <th className="p-2 text-center">STATUS</th>
-                        <th className="p-2">TIME</th>
+                        <th className="p-2">SOLVE TIME</th>
                         <th className="p-2 text-center">TRIES</th>
                       </tr>
                     </thead>
@@ -313,22 +338,23 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                       {rows.map((row) => {
                         const isTop = row.rank === 1;
                         const isPodium = row.rank && row.rank <= 3;
+                        const qSolved = row.questionsSolved || 0;
 
                         return (
                           <tr
                             key={row.teamId}
                             className={`hover:bg-cream/40 transition-colors ${
                               isTop
-                                ? "bg-amber-400/10 font-bold"
+                                ? "bg-amber-400/15 font-bold"
                                 : isPodium
                                 ? "bg-amber-100/30"
                                 : ""
                             }`}
                           >
                             <td className="p-2 text-center">
-                              {row.solved ? (
+                              {row.rank ? (
                                 <span
-                                  className={`inline-flex items-center justify-center w-5 h-5 rounded-full font-black text-[10px] border border-ink ${
+                                  className={`inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full font-black text-[10px] border border-ink ${
                                     row.rank === 1
                                       ? "bg-gold text-ink"
                                       : row.rank === 2
@@ -338,7 +364,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                                       : "bg-crimson text-paper"
                                   }`}
                                 >
-                                  {row.rank}
+                                  {row.rank === 1 ? `👑 1` : row.rank}
                                 </span>
                               ) : (
                                 <span className="text-muted">—</span>
@@ -351,9 +377,28 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                             </td>
                             <td className="p-2 text-[10px] text-muted">{row.teamId}</td>
                             <td className="p-2 text-center">
-                              {row.solved ? (
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-black border ${
+                                  qSolved > 0
+                                    ? "bg-emerald-100 text-emerald-900 border-emerald-400"
+                                    : "bg-cream text-muted border-ink/20"
+                                }`}
+                              >
+                                {qSolved} / 10
+                              </span>
+                            </td>
+                            <td className="p-2 text-center">
+                              {row.boxSolved ? (
                                 <span className="px-1.5 py-0.5 bg-success/20 text-success border border-success rounded text-[9px] font-black uppercase whitespace-nowrap">
-                                  SOLVED ✓
+                                  CRACKED ✓
+                                </span>
+                              ) : row.rank === 1 ? (
+                                <span className="px-1.5 py-0.5 bg-gold/30 text-ink border border-ink rounded text-[9px] font-black uppercase whitespace-nowrap">
+                                  LEAD 👑
+                                </span>
+                              ) : qSolved > 0 ? (
+                                <span className="px-1.5 py-0.5 bg-paper border border-ink text-crimson rounded text-[9px] font-black uppercase whitespace-nowrap">
+                                  {qSolved}/10 SOLVED
                                 </span>
                               ) : (
                                 <span className="px-1.5 py-0.5 bg-paper border border-ink/30 text-muted rounded text-[9px] font-bold uppercase whitespace-nowrap">
@@ -386,7 +431,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
             }}
             className="px-3 py-1 bg-paper hover:bg-cream border border-ink rounded font-mono font-bold text-ink hover:text-crimson active:translate-y-0.5"
           >
-            CLOSE SIDEBAR [ESC]
+            CLOSE [ESC]
           </button>
         </div>
       </aside>

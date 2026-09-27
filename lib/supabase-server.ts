@@ -20,6 +20,15 @@ export function getSupabaseAdmin(): SupabaseClient {
 }
 
 // In-memory data store for local preview and offline testing
+export interface TeamCheckpointProgress {
+  clearedQuestions: Record<string, boolean>;
+  unlockedChars: Record<string, string>;
+  answers: Record<string, string>;
+  solvedCount: number;
+  lastSolvedAt: string | null;
+  attempts: number;
+}
+
 export interface MockDBState {
   teams: Map<
     string,
@@ -62,6 +71,7 @@ export interface MockDBState {
     request_id: string | null;
     ip_hash: string | null;
   }>;
+  teamCheckpoints: Map<string, TeamCheckpointProgress>;
   auditLogs: Array<{
     id: number;
     at: string;
@@ -424,29 +434,6 @@ export const mockDB: MockDBState = {
         created_at: new Date().toISOString(),
       },
     ],
-    [
-      "TEAM-01",
-      {
-        id: "TEAM-01",
-        name: "Cipher Enigma",
-        members: ["Alice", "Bob", "Charlie"],
-        // PIN: 123456 (scrypt hash with salt TEST_SALT_16_BYTES_ABC)
-        pin_hash: "TEST_SALT_16_BYTES_ABC:N5S0teyDLOtqI2uUvy4feKho2FWb1U_6zHZgoiwAtbY",
-        disabled: false,
-        created_at: new Date().toISOString(),
-      },
-    ],
-    [
-      "TEAM-02",
-      {
-        id: "TEAM-02",
-        name: "Binary Shadows",
-        members: ["David", "Eva", "Frank"],
-        pin_hash: "TEST_SALT_16_BYTES_ABC:N5S0teyDLOtqI2uUvy4feKho2FWb1U_6zHZgoiwAtbY",
-        disabled: false,
-        created_at: new Date().toISOString(),
-      },
-    ],
   ]),
   eventState: {
     id: 1,
@@ -478,6 +465,7 @@ export const mockDB: MockDBState = {
     },
   ],
   submissions: [],
+  teamCheckpoints: new Map(),
   auditLogs: [],
 };
 

@@ -16,6 +16,11 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
   const bgPrefs = useBackgroundPrefs();
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
+  const isIntroPage = pathname === "/intro";
+
+  if (isIntroPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between overflow-x-hidden">

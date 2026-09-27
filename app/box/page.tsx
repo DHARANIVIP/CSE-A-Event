@@ -69,7 +69,7 @@ export default function BoxPage() {
   // 2. Submission Handler with Idempotency & 600ms consistent reveal
   const handleSubmit = useCallback(async () => {
     const cleanCode = code.trim().toUpperCase();
-    if (cleanCode.length !== 5 || isSubmitting) return;
+    if (cleanCode.length !== 10 || isSubmitting) return;
 
     setIsSubmitting(true);
     const minRevealTimer = new Promise((resolve) => setTimeout(resolve, 600));
@@ -215,15 +215,15 @@ export default function BoxPage() {
       {/* Dynamic Result / Cooldown / Victory Banner */}
       <ResultBanner data={bannerData} onCooldownFinish={handleCooldownFinish} />
 
-      {/* 5-Box Discrete Code Input */}
+      {/* 10-Box Discrete Code Input */}
       {chestState !== "open" && (
-        <Panel className="w-full max-w-md flex flex-col items-center space-y-5 bg-paper">
+        <Panel className="w-full max-w-lg flex flex-col items-center space-y-5 bg-paper">
           <div className="text-center">
-            <span className="font-mono text-xs font-black uppercase tracking-wider text-muted block">
-              ENTER 5-CHARACTER ACCESS KEY
+            <span className="font-mono text-xs font-black uppercase tracking-wider text-crimson block">
+              ENTER 10-CHARACTER ACCESS KEY
             </span>
-            <span className="font-mono text-[11px] text-muted block">
-              (Derived from Questions Q1 through Q5)
+            <span className="font-mono text-[11px] text-muted block mt-0.5">
+              (Derived from the First character of Questions Q01 through Q10)
             </span>
           </div>
 
@@ -240,11 +240,11 @@ export default function BoxPage() {
               variant="primary"
               size="lg"
               className="w-full"
-              disabled={isInputDisabled || code.length !== 5}
+              disabled={isInputDisabled || code.length !== 10}
               isLoading={isSubmitting}
               onClick={handleSubmit}
             >
-              TRY THE CODE
+              TRY THE 10-CHARACTER CODE
             </Button>
           </div>
         </Panel>

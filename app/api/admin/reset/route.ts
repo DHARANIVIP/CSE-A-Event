@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
   if (body.target === "SUBMISSIONS") {
     const clearedCount = mockDB.submissions.length;
     mockDB.submissions = [];
+    if (mockDB.teamCheckpoints) {
+      mockDB.teamCheckpoints.clear();
+    }
 
     mockDB.auditLogs.push({
       id: Date.now(),
@@ -44,11 +47,14 @@ export async function POST(req: NextRequest) {
     });
 
     safeLog("Admin reset all submissions", { clearedCount });
-    return NextResponse.json({ success: true, message: `Cleared ${clearedCount} submissions.` });
+    return NextResponse.json({ success: true, message: `Cleared ${clearedCount} submissions and team question progress.` });
   }
 
   if (body.target === "EVENT") {
     mockDB.submissions = [];
+    if (mockDB.teamCheckpoints) {
+      mockDB.teamCheckpoints.clear();
+    }
     mockDB.eventState = {
       id: 1,
       start_at: null,

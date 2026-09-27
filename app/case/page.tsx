@@ -122,7 +122,11 @@ export default async function CasePage() {
         </div>
 
         {isQuestionsVisible ? (
-          <QuestionList questions={questionsData.questions} />
+          <QuestionList
+            questions={questionsData.questions}
+            teamId={session.teamId}
+            teamName={session.teamName}
+          />
         ) : (
           <div className="p-6 bg-cream border-2 border-dashed border-ink/40 rounded text-center space-y-3">
             <div className="font-mono text-sm font-bold text-crimson uppercase tracking-wider">
