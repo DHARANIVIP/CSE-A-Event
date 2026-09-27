@@ -72,7 +72,7 @@ export const HeroMysteryBox: React.FC<HeroMysteryBoxProps> = ({ isLoggedIn = fal
         {/* Tactical Status Pill Badge */}
         <div className="mt-3 flex items-center gap-2 px-3 py-1 bg-cream/90 border-2 border-ink rounded-full font-mono text-[11px] font-black text-ink uppercase tracking-wider shadow-hard-sm group-hover:border-crimson group-hover:text-crimson group-hover:-translate-y-0.5 transition-all">
           <span className="w-2 h-2 rounded-full bg-crimson animate-ping" />
-          <span>LOCKED WITH 5-CHARACTER CODE • CLICK TO CRACK</span>
+          <span>LOCKED WITH 10-CHARACTER CODE • CLICK TO CRACK</span>
         </div>
       </Link>
     </div>

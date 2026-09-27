@@ -13,14 +13,19 @@ import {
   Fingerprint,
   Trophy,
 } from "@/components/icons";
+import { cookies } from "next/headers";
 import { getTeamSession } from "@/lib/auth";
 import { calculateEventStatus } from "@/lib/time";
 import { mockDB } from "@/lib/supabase-server";
 import { eventConfig } from "@/config/event.config";
+import { HomeIntroGate } from "@/components/home/HomeIntroGate";
+import { DETECTRIX_INTRO_ENTERED_KEY } from "@/components/intro/DetectiveCaseIntro";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const cookieStore = await cookies();
+  const hasEntered = cookieStore.get(DETECTRIX_INTRO_ENTERED_KEY)?.value === "true";
   const team = await getTeamSession();
 
   // Retrieve current event state from DB or server state
@@ -34,7 +39,7 @@ export default async function HomePage() {
   const someoneSolved = mockDB.submissions.some((s) => s.is_correct);
 
   return (
-    <>
+    <HomeIntroGate hasEnteredInitially={hasEntered}>
       {/* 3D Cinematic Panoramic Desert Vista & Ambient Simulation */}
       <CinematicDesertBackground />
 
@@ -126,6 +131,6 @@ export default async function HomePage() {
         </Link>
       </section>
     </div>
-  </>
+  </HomeIntroGate>
   );
 }

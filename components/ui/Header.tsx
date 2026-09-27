@@ -59,6 +59,9 @@ export const Header: React.FC<HeaderProps> = () => {
     try {
       await fetch("/api/logout", { method: "POST" });
       setTeam(null);
+      if (typeof window !== "undefined") {
+        sessionStorage.clear();
+      }
       window.location.href = "/";
     } catch {
       // ignore

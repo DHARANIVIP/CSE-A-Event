@@ -219,7 +219,7 @@ export const CaseDossier: React.FC = () => {
                 </tr>
                 <tr>
                   <td className="p-2.5 font-bold">Access Code Length</td>
-                  <td className="p-2.5 font-bold text-crimson">5-Character Alphanumeric Code [A-Z0-9]</td>
+                  <td className="p-2.5 font-bold text-crimson">10-Character Alphanumeric Code [A-Z0-9]</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 font-bold">Submission Cooldown</td>

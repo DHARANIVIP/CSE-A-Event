@@ -23,8 +23,8 @@ const submitSchema = z
       .string()
       .trim()
       .transform((c) => c.toUpperCase())
-      .refine((c) => /^[A-Z0-9]{5}$/.test(c), {
-        message: "Code must be exactly 5 alphanumeric characters [A-Z0-9].",
+      .refine((c) => /^[A-Z0-9]{10}$/.test(c), {
+        message: "Code must be exactly 10 alphanumeric characters [A-Z0-9].",
       }),
     requestId: z.string().min(10).max(64),
   })
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     // Constant work execution to equalize timing profile (S5)
     executeConstantWorkDummy();
     return NextResponse.json(
-      { error: { code: "INVALID_FORMAT", message: "Code must be 5 alphanumeric characters." } },
+      { error: { code: "INVALID_FORMAT", message: "Code must be 10 alphanumeric characters." } },
       { status: 400 }
     );
   }

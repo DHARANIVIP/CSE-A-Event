@@ -63,33 +63,8 @@ export const CinematicDesertBackground: React.FC = () => {
   const [isCameraPaused, setIsCameraPaused] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Play Cowboy Theme soundtrack strictly ONE TIME for 6 SECONDS ONLY when user scrolls the landing page
   useEffect(() => {
     setIsMounted(true);
-
-    let scrollHandled = false;
-    const onUserScroll = (e?: Event) => {
-      if (scrollHandled) return;
-
-      // If triggered by wheel, ensure there is actual delta displacement
-      if (e && e.type === "wheel") {
-        const wheelEv = e as WheelEvent;
-        if (Math.abs(wheelEv.deltaY) < 1 && Math.abs(wheelEv.deltaX) < 1) return;
-      }
-
-      scrollHandled = true;
-
-      // Immediately detach all scroll listeners so it cannot be triggered again or cause lag
-      window.removeEventListener("scroll", onUserScroll);
-      window.removeEventListener("wheel", onUserScroll);
-      window.removeEventListener("touchmove", onUserScroll);
-
-      desertAudio.playSixSecondsOnScroll();
-    };
-
-    window.addEventListener("scroll", onUserScroll, { passive: true });
-    window.addEventListener("wheel", onUserScroll, { passive: true });
-    window.addEventListener("touchmove", onUserScroll, { passive: true });
 
     // Smoothly dissolve initial haze promptly without blocking the page
     const timer = setTimeout(() => {
@@ -98,10 +73,6 @@ export const CinematicDesertBackground: React.FC = () => {
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("scroll", onUserScroll);
-      window.removeEventListener("wheel", onUserScroll);
-      window.removeEventListener("touchmove", onUserScroll);
-      desertAudio.stop();
     };
   }, []);
 

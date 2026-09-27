@@ -9,6 +9,24 @@ import { useRouter } from "next/navigation";
 // ============================================================================
 
 export const EXTERNAL_REDIRECT_LINK: string = "/";
+export const DETECTRIX_MUSIC_PLAYED_KEY = "detectrix_entry_music_played";
+export const DETECTRIX_INTRO_ENTERED_KEY = "detectrix_intro_entered";
+
+/**
+ * Checks if the entry music has already been played once.
+ * Prevents replaying on refresh, next time, or re-entry.
+ */
+export const hasEntryMusicPlayed = (): boolean => {
+  if (typeof window === "undefined") return false;
+  try {
+    return (
+      localStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true" ||
+      sessionStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true"
+    );
+  } catch {
+    return false;
+  }
+};
 
 export const DETECTRIX_INTRO_CONFIG = {
   caseFileNumber: "CASE FILE № 2K26",
@@ -61,7 +79,18 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
   }, []);
 
   // Trigger 12-second background music playback
+  // PLAYS ONLY ONCE: Never replays on page refresh or next visit
   const startAudioPlayback = useCallback((): boolean => {
+    if (hasEntryMusicPlayed()) {
+      return false;
+    }
+
+    // Immediately mark as played to prevent any subsequent trigger
+    try {
+      localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+      sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+    } catch {}
+
     const audio = getOrCreateAudio();
     if (!audio) return false;
 
@@ -133,18 +162,22 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
   const handleEnterCase = useCallback(() => {
     if (isNavigating) return;
 
-    // 1. Play 12-second cowboy theme audio immediately on click
+    // 1. Play 12-second cowboy theme audio immediately on click (plays ONLY ONCE)
     startAudioPlayback();
 
-    // 2. Shutter flash effect
+    // 2. Mark intro as entered in cookie and storages so it never blocks or replays on refresh
+    try {
+      localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
+      sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
+      sessionStorage.setItem("introSeen", "true");
+      document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+    } catch {}
+
+    // 3. Shutter flash effect
     setIsFlashing(true);
     setIsNavigating(true);
 
-    try {
-      sessionStorage.setItem("introSeen", "true");
-    } catch {}
-
-    // 3. Client navigation preserves the audio element on document.body
+    // 4. Transition to portal
     setTimeout(() => {
       if (onEnterInvestigation) {
         onEnterInvestigation();
@@ -163,7 +196,10 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     setIsFlashing(true);
     setIsNavigating(true);
     try {
+      localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
+      sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem("introSeen", "true");
+      document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
     } catch {}
     setTimeout(() => {
       if (onEnterInvestigation) {

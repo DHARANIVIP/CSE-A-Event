@@ -20,6 +20,15 @@ export function getSupabaseAdmin(): SupabaseClient {
 }
 
 // In-memory data store for local preview and offline testing
+export interface TeamCheckpointProgress {
+  clearedQuestions: Record<string, boolean>;
+  unlockedChars: Record<string, string>;
+  answers: Record<string, string>;
+  solvedCount: number;
+  lastSolvedAt: string | null;
+  attempts: number;
+}
+
 export interface MockDBState {
   teams: Map<
     string,
@@ -62,6 +71,7 @@ export interface MockDBState {
     request_id: string | null;
     ip_hash: string | null;
   }>;
+  teamCheckpoints: Map<string, TeamCheckpointProgress>;
   auditLogs: Array<{
     id: number;
     at: string;
@@ -478,6 +488,7 @@ export const mockDB: MockDBState = {
     },
   ],
   submissions: [],
+  teamCheckpoints: new Map(),
   auditLogs: [],
 };
 

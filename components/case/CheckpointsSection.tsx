@@ -47,7 +47,7 @@ export const CheckpointsSection: React.FC = () => {
           INTERMEDIATE STAGE CHECKPOINTS
         </h2>
         <p className="font-mono text-xs text-muted mt-1">
-          Verify your intermediate conclusions before assembling the final 5-character key. Checkpoints serve as tie-breakers.
+          Verify your intermediate conclusions before assembling the final 10-character key. Checkpoints serve as tie-breakers.
         </p>
       </div>
 
