@@ -19,13 +19,13 @@ export const DETECTRIX_INTRO_ENTERED_KEY = "detectrix_intro_entered";
 export const hasEntryMusicPlayed = (): boolean => {
   if (typeof window === "undefined") return false;
   try {
-    return (
-      localStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true" ||
-      sessionStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true"
-    );
+    if (localStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true") return true;
+    if (sessionStorage.getItem(DETECTRIX_MUSIC_PLAYED_KEY) === "true") return true;
+    if (typeof document !== "undefined" && document.cookie.includes(`${DETECTRIX_MUSIC_PLAYED_KEY}=true`)) return true;
   } catch {
     return false;
   }
+  return false;
 };
 
 export const DETECTRIX_INTRO_CONFIG = {
@@ -78,6 +78,19 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     return audioRef.current;
   }, []);
 
+  // Pre-buffer audio as soon as intro is displayed to user so click playback is instantaneous
+  useEffect(() => {
+    if (typeof window !== "undefined" && !hasEntryMusicPlayed()) {
+      const audio = getOrCreateAudio();
+      if (audio) {
+        audio.preload = "auto";
+        try {
+          audio.load();
+        } catch {}
+      }
+    }
+  }, [getOrCreateAudio]);
+
   // Trigger 12-second background music playback
   // PLAYS ONLY ONCE: Never replays on page refresh or next visit
   const startAudioPlayback = useCallback((): boolean => {
@@ -85,10 +98,13 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
       return false;
     }
 
-    // Immediately mark as played to prevent any subsequent trigger
+    // Immediately mark as played to prevent any subsequent trigger across storages & cookie
     try {
       localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+      if (typeof document !== "undefined") {
+        document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      }
     } catch {}
 
     const audio = getOrCreateAudio();
@@ -148,6 +164,7 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
           audio.pause();
           audio.currentTime = 0;
           audio.volume = 0.95;
+          audio.remove();
         }
       } catch {}
       setIsPlayingAudio(false);
@@ -170,7 +187,9 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
       localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem("introSeen", "true");
-      document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      if (typeof document !== "undefined") {
+        document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      }
     } catch {}
 
     // 3. Shutter flash effect
@@ -198,8 +217,13 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     try {
       localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
+      localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+      sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
       sessionStorage.setItem("introSeen", "true");
-      document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      if (typeof document !== "undefined") {
+        document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      }
     } catch {}
     setTimeout(() => {
       if (onEnterInvestigation) {

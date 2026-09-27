@@ -11,16 +11,39 @@ import { SkipLink } from "./SkipLink";
 import { eventConfig } from "@/config/event.config";
 
 import { usePathname } from "next/navigation";
+import { IntroProvider, useIntro } from "../intro/IntroContext";
 
-export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface ClientLayoutProps {
+  hasEnteredInitially?: boolean;
+  children: React.ReactNode;
+}
+
+export const ClientLayout: React.FC<ClientLayoutProps> = ({
+  hasEnteredInitially = false,
+  children,
+}) => {
+  return (
+    <IntroProvider hasEnteredInitially={hasEnteredInitially}>
+      <ClientLayoutContent>{children}</ClientLayoutContent>
+    </IntroProvider>
+  );
+};
+
+const ClientLayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const bgPrefs = useBackgroundPrefs();
   const pathname = usePathname();
-  const isLandingPage = pathname === "/";
-  const isIntroPage = pathname === "/intro";
+  const { hasEntered } = useIntro();
 
-  if (isIntroPage) {
+  const isIntroPage = pathname === "/intro";
+  const isIntroOnLanding = pathname === "/" && !hasEntered;
+
+  // On the standalone intro page OR on initial visit to landing page before entering,
+  // SUPPRESS Header, Footer, OfflineBanner, SkipLink, and layout padding completely.
+  if (isIntroPage || isIntroOnLanding) {
     return <>{children}</>;
   }
+
+  const isLandingPage = pathname === "/";
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between overflow-x-hidden">

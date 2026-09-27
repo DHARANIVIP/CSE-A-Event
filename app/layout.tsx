@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Graduate, Pacifico, Courier_Prime, Caveat } from "next/font/google";
+import { cookies } from "next/headers";
 import "./theme.css";
 import "./globals.css";
 import { ClientLayout } from "@/components/ui/ClientLayout";
 import { eventConfig } from "@/config/event.config";
+import { DETECTRIX_INTRO_ENTERED_KEY } from "@/components/intro/DetectiveCaseIntro";
 
 const graduate = Graduate({
   weight: "400",
@@ -55,18 +57,21 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const hasEntered = cookieStore.get(DETECTRIX_INTRO_ENTERED_KEY)?.value === "true";
+
   return (
     <html
       lang="en"
       className={`${graduate.variable} ${pacifico.variable} ${courierPrime.variable} ${caveat.variable}`}
     >
       <body className="antialiased min-h-screen">
-        <ClientLayout>{children}</ClientLayout>
+        <ClientLayout hasEnteredInitially={hasEntered}>{children}</ClientLayout>
       </body>
     </html>
   );

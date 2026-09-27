@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import { desertAudio } from "../sound/DesertAudioAmbience";
 
 interface DustParticle {
   x: number;
@@ -394,11 +393,6 @@ export const CinematicDesertBackground: React.FC = () => {
           maxLife: 40 + Math.random() * 25,
           life: 0,
         });
-
-        if (now - lastAudioStep > 600) {
-          desertAudio.playRollingStoneStep();
-          lastAudioStep = now;
-        }
       }
 
       for (let i = sandPuffs.length - 1; i >= 0; i--) {
