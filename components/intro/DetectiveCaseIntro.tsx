@@ -184,10 +184,12 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
 
     // 2. Mark intro as entered in cookie and storages so it never blocks or replays on refresh
     try {
+      localStorage.setItem("detectrix_intro_seen", "true");
+      sessionStorage.setItem("detectrix_intro_seen", "true");
       localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
-      sessionStorage.setItem("introSeen", "true");
       if (typeof document !== "undefined") {
+        document.cookie = `detectrix_intro_seen=true; path=/; SameSite=Lax`;
         document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
       }
     } catch {}
@@ -200,10 +202,12 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     setTimeout(() => {
       if (onEnterInvestigation) {
         onEnterInvestigation();
-      } else if (redirectUrl.startsWith("http://") || redirectUrl.startsWith("https://")) {
-        window.location.href = redirectUrl;
+      }
+      const targetUrl = redirectUrl || "/?entered=1";
+      if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://")) {
+        window.location.href = targetUrl;
       } else {
-        router.push(redirectUrl);
+        router.push(targetUrl);
       }
     }, 450);
   }, [isNavigating, onEnterInvestigation, redirectUrl, router, startAudioPlayback]);
@@ -215,12 +219,14 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     setIsFlashing(true);
     setIsNavigating(true);
     try {
+      localStorage.setItem("detectrix_intro_seen", "true");
+      sessionStorage.setItem("detectrix_intro_seen", "true");
       localStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
       localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
-      sessionStorage.setItem("introSeen", "true");
       if (typeof document !== "undefined") {
+        document.cookie = `detectrix_intro_seen=true; path=/; SameSite=Lax`;
         document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
         document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
       }
