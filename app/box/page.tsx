@@ -37,15 +37,13 @@ export default function BoxPage() {
   // 1. Authenticate & load event status on mount
   useEffect(() => {
     fetch("/api/me")
-      .then((res) => {
-        if (!res.ok) {
-          router.push("/enter?next=/box");
-          return null;
-        }
-        return res.json();
-      })
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.team) setTeam(data.team);
+        if (data?.team) {
+          setTeam(data.team);
+        } else {
+          router.push("/enter?next=/box");
+        }
       })
       .catch(() => {});
 

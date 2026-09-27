@@ -28,6 +28,7 @@ function EnterForm() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.team) setCurrentSession(data.team);
+        else setCurrentSession(null);
       })
       .catch(() => {});
   }, []);

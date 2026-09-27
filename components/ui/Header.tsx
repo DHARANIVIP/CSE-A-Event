@@ -44,8 +44,10 @@ export const Header: React.FC<HeaderProps> = () => {
         const res = await fetch("/api/me");
         if (res.ok) {
           const data = await res.json();
-          if (data.team) {
+          if (data?.team) {
             setTeam(data.team);
+          } else {
+            setTeam(null);
           }
         }
       } catch {
