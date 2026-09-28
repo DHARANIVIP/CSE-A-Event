@@ -24,10 +24,12 @@ export const QuestionList: React.FC<QuestionListProps> = ({
   teamName = "Investigator",
 }) => {
   // Storage keys strictly scoped to THIS team to guarantee zero data leakage between teams
-  const storagePrefix = `detectrix_team_${teamId}_`;
+  const normalizedTeamId = (teamId || "TEAM").toUpperCase();
+  const storagePrefix = `detectrix_team_${normalizedTeamId}_`;
   const clearedKey = `${storagePrefix}cleared`;
   const charsKey = `${storagePrefix}chars`;
   const answersKey = `${storagePrefix}answers`;
+  const resetAtKey = `${storagePrefix}reset_at`;
 
   // Helper to read initial state from localStorage / sessionStorage
   const getInitialStorage = <T,>(key: string, fallback: T): T => {
@@ -61,6 +63,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
   // Reset confirmation / status message
   const [resetMsg, setResetMsg] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
 
   // Synchronously restore state on client mount
@@ -90,13 +93,28 @@ export const QuestionList: React.FC<QuestionListProps> = ({
       if (a) localAnswers = JSON.parse(a);
     } catch {}
 
+    const resetAt = parseInt(
+      (typeof window !== "undefined"
+        ? localStorage.getItem(resetAtKey) || sessionStorage.getItem(resetAtKey)
+        : "0") || "0",
+      10
+    );
+
     try {
-      const res = await fetch("/api/checkpoint");
+      const res = await fetch("/api/checkpoint", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        const serverCleared = data.clearedQuestions || {};
-        const serverChars = data.unlockedChars || {};
-        const serverAnswers = data.answers || {};
+        const serverLastSolvedAt = data.lastSolvedAt
+          ? new Date(data.lastSolvedAt).getTime()
+          : 0;
+
+        // If server data was solved BEFORE the client triggered a reset, ignore stale server questions
+        const isServerStale =
+          resetAt > 0 && serverLastSolvedAt > 0 && serverLastSolvedAt <= resetAt;
+
+        const serverCleared = isServerStale ? {} : data.clearedQuestions || {};
+        const serverChars = isServerStale ? {} : data.unlockedChars || {};
+        const serverAnswers = isServerStale ? {} : data.answers || {};
 
         // Merge: keep whatever was verified locally or on server! Never wipe out verified answers on navigation!
         const mergedCleared = { ...localCleared, ...serverCleared };
@@ -122,7 +140,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
     } finally {
       setInitialLoading(false);
     }
-  }, [clearedKey, charsKey, answersKey]);
+  }, [clearedKey, charsKey, answersKey, resetAtKey]);
 
   useEffect(() => {
     loadTeamProgress();
@@ -136,6 +154,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
     setLoadingQuestion(qId);
     setFeedback((prev) => ({ ...prev, [qId]: "" }));
     setResetMsg(null);
+    setShowResetConfirm(false);
 
     try {
       const res = await fetch("/api/checkpoint", {
@@ -147,6 +166,12 @@ export const QuestionList: React.FC<QuestionListProps> = ({
 
       if (data.correct) {
         const char = data.unlockedChar || val.charAt(0).toUpperCase();
+
+        // Clear any prior reset timestamp when an answer is successfully verified
+        try {
+          localStorage.removeItem(resetAtKey);
+          sessionStorage.removeItem(resetAtKey);
+        } catch {}
 
         setClearedQuestions((prev) => {
           const next = { ...prev, [qId]: true };
@@ -202,42 +227,63 @@ export const QuestionList: React.FC<QuestionListProps> = ({
 
   // Reset progress for this team ONLY when explicitly clicked
   const handleResetTeamAnswers = async () => {
-    if (!confirm(`Reset all verified answers for team "${teamName}"? All questions will be reset fresh.`)) {
-      return;
-    }
-
     setIsResetting(true);
+    setShowResetConfirm(false);
+
+    const now = Date.now();
+
+    // 1. Immediately reset all local React state
+    setClearedQuestions({});
+    setUnlockedChars({});
+    setAnswers({});
+    setQuestionStatus({});
+    setFeedback({});
+
+    // 2. Mark reset timestamp and clear storage immediately
     try {
-      await fetch("/api/checkpoint", { method: "DELETE" });
+      localStorage.setItem(resetAtKey, String(now));
+      sessionStorage.setItem(resetAtKey, String(now));
 
-      // Clear local states
-      setClearedQuestions({});
-      setUnlockedChars({});
-      setAnswers({});
-      setQuestionStatus({});
-      setFeedback({});
+      localStorage.removeItem(clearedKey);
+      localStorage.removeItem(charsKey);
+      localStorage.removeItem(answersKey);
+      sessionStorage.removeItem(clearedKey);
+      sessionStorage.removeItem(charsKey);
+      sessionStorage.removeItem(answersKey);
 
-      // Clear persistent team storage ONLY upon clicking reset
-      try {
-        localStorage.removeItem(clearedKey);
-        localStorage.removeItem(charsKey);
-        localStorage.removeItem(answersKey);
-        sessionStorage.removeItem(clearedKey);
-        sessionStorage.removeItem(charsKey);
-        sessionStorage.removeItem(answersKey);
-      } catch {}
-
-      setResetMsg(`✓ All question answers reset fresh for team ${teamName}. You can now start fresh!`);
-
-      // Refresh leaderboard to reflect reset
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("leaderboard-update"));
+      // Clean any other team keys
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith(storagePrefix) || k.startsWith(`detectrix_team_${teamId}_`)) && k !== resetAtKey) {
+          localStorage.removeItem(k);
+        }
       }
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const k = sessionStorage.key(i);
+        if (k && (k.startsWith(storagePrefix) || k.startsWith(`detectrix_team_${teamId}_`)) && k !== resetAtKey) {
+          sessionStorage.removeItem(k);
+        }
+      }
+    } catch {}
+
+    // 3. Notify server to delete checkpoint for this team
+    try {
+      await fetch("/api/checkpoint", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
     } catch {
-      setResetMsg("Failed to reset question progress. Please try again.");
-    } finally {
-      setIsResetting(false);
+      // Offline/background failure does not block client reset
     }
+
+    setResetMsg(`✓ All question answers reset fresh for team ${teamName}. You can now start fresh!`);
+
+    // 4. Refresh leaderboard to reflect reset
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("leaderboard-update"));
+    }
+
+    setIsResetting(false);
   };
 
   const handleInputChange = (qId: string, val: string) => {
@@ -306,26 +352,86 @@ export const QuestionList: React.FC<QuestionListProps> = ({
             </span>
           </div>
 
-          {/* Reset Verified Answers Button */}
-          <button
-            onClick={handleResetTeamAnswers}
-            disabled={isResetting}
-            title="Reset verified answers for this team to test fresh"
-            className="px-3 py-1.5 bg-cream hover:bg-rose-100 border-2 border-ink hover:border-rose-700 text-ink hover:text-rose-800 rounded font-mono text-xs font-bold uppercase tracking-wider shadow-hard-sm active:translate-y-0.5 transition-all flex items-center gap-1.5"
-          >
-            <span>↺</span>
-            <span>{isResetting ? "RESETTING..." : "RESET ANSWERS"}</span>
-          </button>
+          {/* Reset Verified Answers Button & Inline Confirmation */}
+          {!showResetConfirm ? (
+            <button
+              type="button"
+              onClick={() => {
+                setResetMsg(null);
+                setShowResetConfirm(true);
+              }}
+              disabled={isResetting}
+              title="Reset verified answers for this team to test fresh"
+              id="reset-answers-btn"
+              className="px-3 py-1.5 bg-cream hover:bg-rose-100 border-2 border-ink hover:border-rose-700 text-ink hover:text-rose-800 rounded font-mono text-xs font-bold uppercase tracking-wider shadow-hard-sm active:translate-y-0.5 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>↺</span>
+              <span>{isResetting ? "RESETTING..." : "RESET ANSWERS"}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetTeamAnswers}
+                disabled={isResetting}
+                id="confirm-reset-btn"
+                className="px-3 py-1.5 bg-crimson hover:bg-crimson-dark text-paper border-2 border-ink rounded font-mono text-xs font-black uppercase tracking-wider shadow-hard-sm active:translate-y-0.5 transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+              >
+                <span>⚠️</span>
+                <span>{isResetting ? "CLEARING..." : "CONFIRM RESET?"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                disabled={isResetting}
+                id="cancel-reset-btn"
+                className="px-2.5 py-1.5 bg-paper hover:bg-cream border-2 border-ink text-muted hover:text-ink rounded font-mono text-xs font-bold uppercase tracking-wider shadow-hard-sm active:translate-y-0.5 transition-all cursor-pointer"
+              >
+                CANCEL
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Reset Confirmation Prompt Banner */}
+      {showResetConfirm && (
+        <div className="p-3.5 bg-amber-50 border-2 border-amber-600 rounded font-mono text-xs text-amber-950 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-amber-700 font-black text-base">⚠️</span>
+            <span>
+              <strong>Reset all verified answers for team &ldquo;{teamName}&rdquo;?</strong> All 10 questions and unlocked characters will be reset fresh.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleResetTeamAnswers}
+              disabled={isResetting}
+              className="px-3 py-1.5 bg-crimson hover:bg-crimson-dark text-paper border border-ink rounded font-mono text-xs font-black uppercase tracking-wider shadow-sm cursor-pointer"
+            >
+              YES, RESET ALL
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowResetConfirm(false)}
+              disabled={isResetting}
+              className="px-2.5 py-1.5 bg-paper hover:bg-cream border border-ink text-ink rounded font-mono text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer"
+            >
+              CANCEL
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Reset Confirmation Banner */}
       {resetMsg && (
         <div className="p-3 bg-emerald-50 border-2 border-emerald-600 rounded font-mono text-xs font-bold text-emerald-900 shadow-sm flex items-center justify-between">
           <span>{resetMsg}</span>
           <button
+            type="button"
             onClick={() => setResetMsg(null)}
-            className="text-emerald-800 hover:text-emerald-950 font-black text-sm px-1"
+            className="text-emerald-800 hover:text-emerald-950 font-black text-sm px-1 cursor-pointer"
           >
             ✕
           </button>
