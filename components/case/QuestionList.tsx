@@ -63,9 +63,20 @@ export const QuestionList: React.FC<QuestionListProps> = ({
   const [isResetting, setIsResetting] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
 
+  // Synchronously restore state on client mount
+  useEffect(() => {
+    try {
+      const c = localStorage.getItem(clearedKey) || sessionStorage.getItem(clearedKey);
+      const ch = localStorage.getItem(charsKey) || sessionStorage.getItem(charsKey);
+      const a = localStorage.getItem(answersKey) || sessionStorage.getItem(answersKey);
+      if (c) setClearedQuestions(JSON.parse(c));
+      if (ch) setUnlockedChars(JSON.parse(ch));
+      if (a) setAnswers(JSON.parse(a));
+    } catch {}
+  }, [clearedKey, charsKey, answersKey]);
+
   // Fetch verified progress from server and merge with team storage
   const loadTeamProgress = useCallback(async () => {
-    // 1. Read existing local storage for this team
     let localCleared: Record<string, boolean> = {};
     let localChars: Record<string, string> = {};
     let localAnswers: Record<string, string> = {};
@@ -78,12 +89,6 @@ export const QuestionList: React.FC<QuestionListProps> = ({
       if (ch) localChars = JSON.parse(ch);
       if (a) localAnswers = JSON.parse(a);
     } catch {}
-
-    if (Object.keys(localCleared).length > 0) {
-      setClearedQuestions((prev) => ({ ...localCleared, ...prev }));
-      setUnlockedChars((prev) => ({ ...localChars, ...prev }));
-      setAnswers((prev) => ({ ...localAnswers, ...prev }));
-    }
 
     try {
       const res = await fetch("/api/checkpoint");
@@ -100,16 +105,16 @@ export const QuestionList: React.FC<QuestionListProps> = ({
 
         setClearedQuestions(mergedCleared);
         setUnlockedChars(mergedChars);
-        setAnswers((prev) => ({ ...mergedAnswers, ...prev }));
+        setAnswers(mergedAnswers);
 
         // Persist merged progress
         try {
           localStorage.setItem(clearedKey, JSON.stringify(mergedCleared));
           localStorage.setItem(charsKey, JSON.stringify(mergedChars));
-          localStorage.setItem(answersKey, JSON.stringify({ ...mergedAnswers, ...answers }));
+          localStorage.setItem(answersKey, JSON.stringify(mergedAnswers));
           sessionStorage.setItem(clearedKey, JSON.stringify(mergedCleared));
           sessionStorage.setItem(charsKey, JSON.stringify(mergedChars));
-          sessionStorage.setItem(answersKey, JSON.stringify({ ...mergedAnswers, ...answers }));
+          sessionStorage.setItem(answersKey, JSON.stringify(mergedAnswers));
         } catch {}
       }
     } catch {
@@ -117,7 +122,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
     } finally {
       setInitialLoading(false);
     }
-  }, [clearedKey, charsKey, answersKey, answers]);
+  }, [clearedKey, charsKey, answersKey]);
 
   useEffect(() => {
     loadTeamProgress();
@@ -143,23 +148,32 @@ export const QuestionList: React.FC<QuestionListProps> = ({
       if (data.correct) {
         const char = data.unlockedChar || val.charAt(0).toUpperCase();
 
-        const updatedCleared = { ...clearedQuestions, [qId]: true };
-        const updatedChars = { ...unlockedChars, [qId]: char };
-        const updatedAnswers = { ...answers, [qId]: val };
+        setClearedQuestions((prev) => {
+          const next = { ...prev, [qId]: true };
+          try {
+            localStorage.setItem(clearedKey, JSON.stringify(next));
+            sessionStorage.setItem(clearedKey, JSON.stringify(next));
+          } catch {}
+          return next;
+        });
 
-        setClearedQuestions(updatedCleared);
-        setUnlockedChars(updatedChars);
-        setAnswers(updatedAnswers);
+        setUnlockedChars((prev) => {
+          const next = { ...prev, [qId]: char };
+          try {
+            localStorage.setItem(charsKey, JSON.stringify(next));
+            sessionStorage.setItem(charsKey, JSON.stringify(next));
+          } catch {}
+          return next;
+        });
 
-        // Save persistently in both localStorage and sessionStorage
-        try {
-          localStorage.setItem(clearedKey, JSON.stringify(updatedCleared));
-          localStorage.setItem(charsKey, JSON.stringify(updatedChars));
-          localStorage.setItem(answersKey, JSON.stringify(updatedAnswers));
-          sessionStorage.setItem(clearedKey, JSON.stringify(updatedCleared));
-          sessionStorage.setItem(charsKey, JSON.stringify(updatedChars));
-          sessionStorage.setItem(answersKey, JSON.stringify(updatedAnswers));
-        } catch {}
+        setAnswers((prev) => {
+          const next = { ...prev, [qId]: val };
+          try {
+            localStorage.setItem(answersKey, JSON.stringify(next));
+            sessionStorage.setItem(answersKey, JSON.stringify(next));
+          } catch {}
+          return next;
+        });
 
         setQuestionStatus((prev) => ({ ...prev, [qId]: "correct" }));
         setFeedback((prev) => ({
@@ -379,6 +393,13 @@ export const QuestionList: React.FC<QuestionListProps> = ({
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white font-mono text-xs font-black rounded border-2 border-emerald-800 shadow-sm uppercase tracking-wider">
                       <span>✓ CORRECT ANSWER — VERIFIED</span>
                     </div>
+
+                    {answers[q.id] && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100/80 border border-emerald-500 rounded font-mono text-xs text-emerald-950 font-bold shadow-sm">
+                        <span className="text-[10px] text-emerald-800 uppercase font-semibold">ANSWER:</span>
+                        <span className="tracking-wide">{answers[q.id]}</span>
+                      </div>
+                    )}
 
                     {unlockedChars[q.id] && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-paper border-2 border-emerald-600 rounded font-mono text-xs font-black text-emerald-800 shadow-sm">
