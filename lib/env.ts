@@ -9,8 +9,8 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(10).default("mock_service_role_key_development_only"),
 
   // Secret Code Hashes (scrypt base64url)
-  CODE_SALT: z.string().min(8).default("DEFAULT_EVENT_CODE_SALT_16B"),
-  CODE_HASH: z.string().min(16).default("DEFAULT_MOCK_HASH_FOR_DEVELOPMENT_ONLY"),
+  CODE_SALT: z.string().min(8).default("TEST_SALT_16_BYTES_ABC"),
+  CODE_HASH: z.string().min(16).default("TRP6IKeABN-VE2HwsySyZyPEeSNzFsptXe5FT4DlqR0"),
 
   // Admin Access (scrypt hash of admin password)
   ADMIN_PASSWORD_HASH: z.string().min(16).default("DEFAULT_MOCK_ADMIN_HASH_DEVELOPMENT_ONLY"),

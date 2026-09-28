@@ -23,12 +23,35 @@ export const QuestionList: React.FC<QuestionListProps> = ({
   teamId = "TEAM",
   teamName = "Investigator",
 }) => {
+  // Storage keys strictly scoped to THIS team to guarantee zero data leakage between teams
+  const storagePrefix = `detectrix_team_${teamId}_`;
+  const clearedKey = `${storagePrefix}cleared`;
+  const charsKey = `${storagePrefix}chars`;
+  const answersKey = `${storagePrefix}answers`;
+
+  // Helper to read initial state from localStorage / sessionStorage
+  const getInitialStorage = <T,>(key: string, fallback: T): T => {
+    if (typeof window === "undefined") return fallback;
+    try {
+      const val = localStorage.getItem(key) || sessionStorage.getItem(key);
+      return val ? JSON.parse(val) : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
   // Map of question ID to whether it was solved correctly (STRICTLY per team)
-  const [clearedQuestions, setClearedQuestions] = useState<Record<string, boolean>>({});
+  const [clearedQuestions, setClearedQuestions] = useState<Record<string, boolean>>(() =>
+    getInitialStorage<Record<string, boolean>>(clearedKey, {})
+  );
   // Map of question ID to the unlocked first character (STRICTLY per team)
-  const [unlockedChars, setUnlockedChars] = useState<Record<string, string>>({});
+  const [unlockedChars, setUnlockedChars] = useState<Record<string, string>>(() =>
+    getInitialStorage<Record<string, string>>(charsKey, {})
+  );
   // Input values
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>(() =>
+    getInitialStorage<Record<string, string>>(answersKey, {})
+  );
   // Loading state per question
   const [loadingQuestion, setLoadingQuestion] = useState<string | null>(null);
   // Status: "idle" | "correct" | "wrong"
@@ -38,57 +61,63 @@ export const QuestionList: React.FC<QuestionListProps> = ({
   // Reset confirmation / status message
   const [resetMsg, setResetMsg] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(false);
 
-  // Storage keys strictly scoped to THIS team to guarantee zero data leakage between teams
-  const storagePrefix = `detectrix_team_${teamId}_`;
-  const clearedKey = `${storagePrefix}cleared`;
-  const charsKey = `${storagePrefix}chars`;
-  const answersKey = `${storagePrefix}answers`;
-
-  // Fetch verified progress from server for THIS team on mount / teamId change
+  // Fetch verified progress from server and merge with team storage
   const loadTeamProgress = useCallback(async () => {
-    // 1. Purge legacy un-namespaced keys to prevent cross-team bleed
+    // 1. Read existing local storage for this team
+    let localCleared: Record<string, boolean> = {};
+    let localChars: Record<string, string> = {};
+    let localAnswers: Record<string, string> = {};
+
     try {
-      sessionStorage.removeItem("detectrix_cleared_questions");
-      sessionStorage.removeItem("detectrix_unlocked_chars");
-      sessionStorage.removeItem("detectrix_question_answers");
+      const c = localStorage.getItem(clearedKey) || sessionStorage.getItem(clearedKey);
+      const ch = localStorage.getItem(charsKey) || sessionStorage.getItem(charsKey);
+      const a = localStorage.getItem(answersKey) || sessionStorage.getItem(answersKey);
+      if (c) localCleared = JSON.parse(c);
+      if (ch) localChars = JSON.parse(ch);
+      if (a) localAnswers = JSON.parse(a);
     } catch {}
+
+    if (Object.keys(localCleared).length > 0) {
+      setClearedQuestions((prev) => ({ ...localCleared, ...prev }));
+      setUnlockedChars((prev) => ({ ...localChars, ...prev }));
+      setAnswers((prev) => ({ ...localAnswers, ...prev }));
+    }
 
     try {
       const res = await fetch("/api/checkpoint");
       if (res.ok) {
         const data = await res.json();
-        // Server returns ONLY this team's cleared questions and unlocked characters
         const serverCleared = data.clearedQuestions || {};
         const serverChars = data.unlockedChars || {};
         const serverAnswers = data.answers || {};
 
-        setClearedQuestions(serverCleared);
-        setUnlockedChars(serverChars);
-        setAnswers(serverAnswers);
+        // Merge: keep whatever was verified locally or on server! Never wipe out verified answers on navigation!
+        const mergedCleared = { ...localCleared, ...serverCleared };
+        const mergedChars = { ...localChars, ...serverChars };
+        const mergedAnswers = { ...localAnswers, ...serverAnswers };
 
-        // Update team-scoped storage cache
+        setClearedQuestions(mergedCleared);
+        setUnlockedChars(mergedChars);
+        setAnswers((prev) => ({ ...mergedAnswers, ...prev }));
+
+        // Persist merged progress
         try {
-          sessionStorage.setItem(clearedKey, JSON.stringify(serverCleared));
-          sessionStorage.setItem(charsKey, JSON.stringify(serverChars));
-          sessionStorage.setItem(answersKey, JSON.stringify(serverAnswers));
+          localStorage.setItem(clearedKey, JSON.stringify(mergedCleared));
+          localStorage.setItem(charsKey, JSON.stringify(mergedChars));
+          localStorage.setItem(answersKey, JSON.stringify({ ...mergedAnswers, ...answers }));
+          sessionStorage.setItem(clearedKey, JSON.stringify(mergedCleared));
+          sessionStorage.setItem(charsKey, JSON.stringify(mergedChars));
+          sessionStorage.setItem(answersKey, JSON.stringify({ ...mergedAnswers, ...answers }));
         } catch {}
-      } else {
-        // Fallback to team-scoped storage
-        const cachedCleared = sessionStorage.getItem(clearedKey);
-        const cachedChars = sessionStorage.getItem(charsKey);
-        const cachedAnswers = sessionStorage.getItem(answersKey);
-        if (cachedCleared) setClearedQuestions(JSON.parse(cachedCleared));
-        if (cachedChars) setUnlockedChars(JSON.parse(cachedChars));
-        if (cachedAnswers) setAnswers(JSON.parse(cachedAnswers));
       }
     } catch {
       // Offline fallback
     } finally {
       setInitialLoading(false);
     }
-  }, [clearedKey, charsKey, answersKey]);
+  }, [clearedKey, charsKey, answersKey, answers]);
 
   useEffect(() => {
     loadTeamProgress();
@@ -114,21 +143,23 @@ export const QuestionList: React.FC<QuestionListProps> = ({
       if (data.correct) {
         const char = data.unlockedChar || val.charAt(0).toUpperCase();
 
-        setClearedQuestions((prev) => {
-          const next = { ...prev, [qId]: true };
-          try {
-            sessionStorage.setItem(clearedKey, JSON.stringify(next));
-          } catch {}
-          return next;
-        });
+        const updatedCleared = { ...clearedQuestions, [qId]: true };
+        const updatedChars = { ...unlockedChars, [qId]: char };
+        const updatedAnswers = { ...answers, [qId]: val };
 
-        setUnlockedChars((prev) => {
-          const next = { ...prev, [qId]: char };
-          try {
-            sessionStorage.setItem(charsKey, JSON.stringify(next));
-          } catch {}
-          return next;
-        });
+        setClearedQuestions(updatedCleared);
+        setUnlockedChars(updatedChars);
+        setAnswers(updatedAnswers);
+
+        // Save persistently in both localStorage and sessionStorage
+        try {
+          localStorage.setItem(clearedKey, JSON.stringify(updatedCleared));
+          localStorage.setItem(charsKey, JSON.stringify(updatedChars));
+          localStorage.setItem(answersKey, JSON.stringify(updatedAnswers));
+          sessionStorage.setItem(clearedKey, JSON.stringify(updatedCleared));
+          sessionStorage.setItem(charsKey, JSON.stringify(updatedChars));
+          sessionStorage.setItem(answersKey, JSON.stringify(updatedAnswers));
+        } catch {}
 
         setQuestionStatus((prev) => ({ ...prev, [qId]: "correct" }));
         setFeedback((prev) => ({
@@ -155,7 +186,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
     }
   };
 
-  // Reset progress for this team (fresh & clean for testing or re-verification)
+  // Reset progress for this team ONLY when explicitly clicked
   const handleResetTeamAnswers = async () => {
     if (!confirm(`Reset all verified answers for team "${teamName}"? All questions will be reset fresh.`)) {
       return;
@@ -172,8 +203,11 @@ export const QuestionList: React.FC<QuestionListProps> = ({
       setQuestionStatus({});
       setFeedback({});
 
-      // Clear team-scoped storage
+      // Clear persistent team storage ONLY upon clicking reset
       try {
+        localStorage.removeItem(clearedKey);
+        localStorage.removeItem(charsKey);
+        localStorage.removeItem(answersKey);
         sessionStorage.removeItem(clearedKey);
         sessionStorage.removeItem(charsKey);
         sessionStorage.removeItem(answersKey);
@@ -196,6 +230,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
     setAnswers((prev) => {
       const next = { ...prev, [qId]: val };
       try {
+        localStorage.setItem(answersKey, JSON.stringify(next));
         sessionStorage.setItem(answersKey, JSON.stringify(next));
       } catch {}
       return next;
@@ -213,6 +248,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
     setClearedQuestions((prev) => {
       const next = { ...prev, [qId]: false };
       try {
+        localStorage.setItem(clearedKey, JSON.stringify(next));
         sessionStorage.setItem(clearedKey, JSON.stringify(next));
       } catch {}
       return next;
