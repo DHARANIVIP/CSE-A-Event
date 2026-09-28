@@ -200,11 +200,12 @@ export const DetectiveCaseIntro: React.FC<DetectiveCaseIntroProps> = ({
     setIsNavigating(true);
     try {
       sessionStorage.setItem(DETECTRIX_INTRO_ENTERED_KEY, "true");
-      localStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
       sessionStorage.setItem(DETECTRIX_MUSIC_PLAYED_KEY, "true");
+      localStorage.removeItem(DETECTRIX_MUSIC_PLAYED_KEY);
+      localStorage.removeItem(DETECTRIX_INTRO_ENTERED_KEY);
       if (typeof document !== "undefined") {
-        document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=true; path=/; SameSite=Lax`;
-        document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `${DETECTRIX_INTRO_ENTERED_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        document.cookie = `${DETECTRIX_MUSIC_PLAYED_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       }
     } catch {}
     setTimeout(() => {
