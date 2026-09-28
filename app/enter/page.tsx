@@ -28,6 +28,7 @@ function EnterForm() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.team) setCurrentSession(data.team);
+        else setCurrentSession(null);
       })
       .catch(() => {});
   }, []);
@@ -68,6 +69,9 @@ function EnterForm() {
       }
 
       // Success -> navigate to target page
+      if (typeof window !== "undefined") {
+        sessionStorage.clear();
+      }
       router.push(safeNext);
       router.refresh();
     } catch {
@@ -78,6 +82,9 @@ function EnterForm() {
 
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
+    if (typeof window !== "undefined") {
+      sessionStorage.clear();
+    }
     setCurrentSession(null);
     router.refresh();
   };

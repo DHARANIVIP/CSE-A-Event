@@ -44,8 +44,10 @@ export const Header: React.FC<HeaderProps> = () => {
         const res = await fetch("/api/me");
         if (res.ok) {
           const data = await res.json();
-          if (data.team) {
+          if (data?.team) {
             setTeam(data.team);
+          } else {
+            setTeam(null);
           }
         }
       } catch {
@@ -59,6 +61,9 @@ export const Header: React.FC<HeaderProps> = () => {
     try {
       await fetch("/api/logout", { method: "POST" });
       setTeam(null);
+      if (typeof window !== "undefined") {
+        sessionStorage.clear();
+      }
       window.location.href = "/";
     } catch {
       // ignore
